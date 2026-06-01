@@ -138,7 +138,23 @@ function parseRawEmail(rawText) {
   const headers  = parseHeaders(headerText);
   const fromRaw  = headers['from'] || '';
   const subject  = decodeEncodedWords(headers['subject'] || '(Tanpa Judul)');
-  const { text, html } = extractBodies(headers, body);
+
+  let { text, html } = extractBodies(headers, body);
+
+  // Fallback 1 — kalau parsing multipart gagal, pakai raw body langsung
+  if (!text && !html) {
+    const ct = (headers['content-type'] || '').toLowerCase();
+    if (ct.includes('text/html')) {
+      html = body;
+    } else {
+      text = body;
+    }
+  }
+
+  // Fallback 2 — kalau masih kosong juga, simpan seluruh raw email
+  if (!text && !html) {
+    text = rawText;
+  }
 
   return {
     from:     extractEmail(fromRaw),
