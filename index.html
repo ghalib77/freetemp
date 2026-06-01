@@ -281,29 +281,35 @@ function doCopy() {
 }
 
 // ── MESSAGES ───────────────────────────────────────────────────────────────
-async function loadMsgs() {
-  if (!S.user || !API_URL) return;
-  
+let isLoading = false;
+
+async function loadMsgs(resetTimer = true) {
+  if (!S.user || !API_URL || isLoading) return;
+
+  isLoading = true;
   document.getElementById('rbtn').classList.add('spin');
-  
+
   try {
     const email = `${S.user}@${S.domain}`;
     const r = await fetch(`${API_URL}/api/messages?email=${encodeURIComponent(email)}`);
     const msgs = await r.json();
     const prevCount = S.msgs.length;
-    
+
     S.msgs = msgs;
-    
-    if (msgs.length > prevCount && prevCount > 0) toast('📨',`${msgs.length - prevCount} email baru!`);
-    
+
+    if (msgs.length > prevCount && prevCount > 0) {
+      toast('📨', `${msgs.length - prevCount} email baru!`);
+    }
+
     render(msgs);
   } catch(e) {
-    toast('❌','Gagal memuat pesan');
+    toast('❌', 'Gagal memuat pesan');
   }
-  
+
   document.getElementById('rbtn').classList.remove('spin');
-  
-  startTimer();
+  isLoading = false;
+
+  if (resetTimer) startTimer();
 }
 
 function render(msgs) {
@@ -394,20 +400,21 @@ function closeM() { document.getElementById('ov').classList.remove('on'); S.open
 // ── TIMER ──────────────────────────────────────────────────────────────────
 function startTimer() {
   clearInterval(S.timer);
-  
-  let sec = 0;
+
+  let sec = S.cd || 30;
   const el = document.getElementById('lastUpdate');
 
+  if (el) el.textContent = `${sec}s`;
+
   S.timer = setInterval(async () => {
-    const el = document.getElementById('lastUpdate');
-    
+    sec--;
+
     if (el) el.textContent = `${sec}s`;
 
-    if(sec >= 5) {
-      await loadMsgs();
+    if (sec <= 0) {
+      clearInterval(S.timer);
+      await loadMsgs(true);
     }
-
-    sec++;
   }, 1000);
 }
   
