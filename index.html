@@ -226,14 +226,13 @@ footer{border-top:1px solid var(--bd);padding:20px 0;text-align:center;font-size
 const LS_API  = 'tb_api_url';
 const LS_USER = 'tb_last_user';
 
-let API_URL = localStorage.getItem(LS_API) || 'https://temporary-mail.muhamadghalib7.workers.dev';
+let API_URL = 'https://temporary-mail.muhamadghalib7.workers.dev';
 let S = { user:'', domain:'', msgs:[], cd:30, timer:null, openId:null };
 
 // ── INIT ───────────────────────────────────────────────────────────────────
 async function init() {
   if (API_URL) {
     document.getElementById('cfgCard').style.display = 'none';
-    document.getElementById('apiUrlInput').value = API_URL;
     await loadDomain();
     const lastUser = localStorage.getItem(LS_USER);
     if (lastUser) {
@@ -243,16 +242,6 @@ async function init() {
   } else {
     setStatus('load');
   }
-}
-
-function saveConfig() {
-  const url = document.getElementById('apiUrlInput').value.trim().replace(/\/$/, '');
-  if (!url.startsWith('http')) { toast('⚠️','Masukkan URL yang valid'); return; }
-  API_URL = url;
-  localStorage.setItem(LS_API, url);
-  document.getElementById('cfgCard').style.display = 'none';
-  toast('✅','URL Worker disimpan!');
-  loadDomain();
 }
 
 async function loadDomain() {
