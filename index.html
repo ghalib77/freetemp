@@ -44,7 +44,9 @@ main{padding:32px 0 60px}
 .btn-ok{background:rgba(52,211,153,.12);color:var(--gn);border:1px solid rgba(52,211,153,.25)}
 .btn-rd{background:rgba(248,113,113,.1);color:var(--rd);border:1px solid rgba(248,113,113,.2)}.btn-rd:hover{background:rgba(248,113,113,.18)}
 
-.cdown{margin-top:14px;display:flex;align-items:center;gap:9px;font-size:12px;color:var(--mu)}
+.refresh-info{margin-top:14px;display:flex;align-items:center;gap:8px;font-size:12px;color:var(--mu)}
+.refresh-pulse{width:6px;height:6px;border-radius:50%;background:var(--gn);box-shadow:0 0 6px var(--gn);animation:blink 2s infinite;flex-shrink:0}
+.refresh-info span{opacity:.7}
 .prog-t{flex:1;height:3px;background:var(--bd);border-radius:3px;overflow:hidden}
 .prog-f{height:100%;background:linear-gradient(90deg,var(--ac),var(--ac2));border-radius:3px;transition:width 1s linear}
 
@@ -159,10 +161,9 @@ footer{border-top:1px solid var(--bd);padding:20px 0;text-align:center;font-size
           Salin
         </button>
       </div>
-      <div class="cdown">
-        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
-        Refresh dalam <span id="cd">5</span>s
-        <div class="prog-t"><div class="prog-f" id="pf" style="width:100%"></div></div>
+      <div class="refresh-info">
+        <div class="refresh-pulse" id="refreshPulse"></div>
+        <span>Auto-refresh aktif · terakhir <span id="lastUpdate">baru saja</span></span>
       </div>
     </div>
 
@@ -393,15 +394,26 @@ function closeM() { document.getElementById('ov').classList.remove('on'); S.open
 
 // ── TIMER ──────────────────────────────────────────────────────────────────
 function startTimer() {
-  stopTimer(); S.cd = 5; updCd();
-  S.timer = setInterval(()=>{ S.cd--; updCd(); if(S.cd<=0) loadMsgs(); }, 1000);
+  stopTimer();
+  S.timer = setInterval(() => loadMsgs(), 5000);
+  resetCd();
 }
-function stopTimer() { clearInterval(S.timer); }
-function resetCd() { S.cd = 5; updCd(); }
-function updCd() {
-  const v = Math.max(0, S.cd);
-  document.getElementById('cd').textContent = v;
-  document.getElementById('pf').style.width = (v/5*100)+'%';
+
+function resetCd() {
+  let sec = 0;
+  const el = document.getElementById('lastUpdate');
+  if (el) el.textContent = 'baru saja';
+  clearInterval(S.secTimer);
+  S.secTimer = setInterval(() => {
+    sec++;
+    const el = document.getElementById('lastUpdate');
+    if (el) el.textContent = sec < 60 ? `${sec}d lalu` : `${Math.floor(sec/60)}m lalu`;
+  }, 1000);
+}
+
+function stopTimer() {
+  clearInterval(S.timer);
+  clearInterval(S.secTimer);
 }
   
 // ── UTILS ──────────────────────────────────────────────────────────────────
