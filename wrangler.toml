@@ -1,0 +1,21 @@
+name            = "tempmail-worker"
+main            = "worker.js"
+compatibility_date  = "2024-09-23"
+compatibility_flags = ["nodejs_compat"]
+
+# ── Ganti MAIL_DOMAIN dengan domain kamu ─────────────────────────────────────
+[vars]
+MAIL_DOMAIN = "GANTI_DENGAN_DOMAIN_KAMU.com"
+
+# ── KV Namespace ─────────────────────────────────────────────────────────────
+# Jalankan dulu: npx wrangler kv namespace create MAIL_KV
+# Lalu salin id-nya ke sini ↓
+[[kv_namespaces]]
+binding = "MAIL_KV"
+id      = "GANTI_DENGAN_KV_ID_KAMU"
+
+# ── Email Routing ─────────────────────────────────────────────────────────────
+# Worker ini akan menangani SEMUA email yang masuk ke domain kamu
+[[email.routes]]
+pattern   = "*@GANTI_DENGAN_DOMAIN_KAMU.com"
+zone_name = "GANTI_DENGAN_DOMAIN_KAMU.com"
