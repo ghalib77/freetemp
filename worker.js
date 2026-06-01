@@ -539,7 +539,7 @@ export default {
       }, 500);
     }
   }
-};}
+};
 
 function decodeB64(str) {
   try { return atob(str.replace(/\s/g, '')); } catch { return str; }
