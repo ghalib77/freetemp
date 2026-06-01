@@ -303,7 +303,8 @@ async function loadMsgs(resetTimer = true) {
 
     render(msgs);
   } catch(e) {
-    toast('❌', 'Gagal memuat pesan');
+    // toast('❌', 'Gagal memuat pesan');
+    toast(e.toString());
   }
 
   document.getElementById('rbtn').classList.remove('spin');
