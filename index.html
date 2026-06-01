@@ -253,7 +253,7 @@ async function useEmail(silent = false) {
 
   S.user = user;
   localStorage.setItem(LS_USER, user);
-  stopTimer();
+  
   if (!silent) toast('📬',`Inbox ${user}@${S.domain} aktif!`);
   await loadMsgs();
 }
