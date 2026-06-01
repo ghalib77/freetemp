@@ -393,14 +393,15 @@ function closeM() { document.getElementById('ov').classList.remove('on'); S.open
 
 // ── TIMER ──────────────────────────────────────────────────────────────────
 function startTimer() {
-  stopTimer(); S.cd = 5; updCd(); // ← ganti 30 jadi 5
+  stopTimer(); S.cd = 5; updCd();
   S.timer = setInterval(()=>{ S.cd--; updCd(); if(S.cd<=0) loadMsgs(); }, 1000);
 }
-function resetCd() { S.cd = 5; updCd(); } // ← ganti 30 jadi 5
+function stopTimer() { clearInterval(S.timer); }
+function resetCd() { S.cd = 5; updCd(); }
 function updCd() {
   const v = Math.max(0, S.cd);
   document.getElementById('cd').textContent = v;
-  document.getElementById('pf').style.width = (v/5*100)+'%'; // ← ganti 30 jadi 5
+  document.getElementById('pf').style.width = (v/5*100)+'%';
 }
   
 // ── UTILS ──────────────────────────────────────────────────────────────────
