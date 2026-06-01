@@ -231,7 +231,6 @@ let S = { user:'', domain:'', msgs:[], cd:30, timer:null, openId:null };
 
 // ── INIT ───────────────────────────────────────────────────────────────────
 async function init() {
-  document.getElementById('cfgCard').style.display = 'none';
   await loadDomain();
   const lastUser = localStorage.getItem(LS_USER);
   if (lastUser) {
