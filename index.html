@@ -163,7 +163,7 @@ footer{border-top:1px solid var(--bd);padding:20px 0;text-align:center;font-size
       </div>
       <div class="refresh-info">
         <div class="refresh-pulse" id="refreshPulse"></div>
-        <span>Auto-refresh aktif · refresh dalam <span id="lastUpdate"></span></span>
+        <span>Auto-refresh aktif · refresh dalam <span id="lastUpdate">0</span></span>
       </div>
     </div>
 
@@ -177,7 +177,7 @@ footer{border-top:1px solid var(--bd);padding:20px 0;text-align:center;font-size
         <span class="badge" id="badge">0</span>
       </div>
       <div class="inbox-actions">
-        <button class="rbtn" id="rbtn" onclick="loadMsgs()">
+        <button class="rbtn" id="rbtn" onclick="resetTimer()">
           <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0114.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0020.49 15"/></svg>
           Refresh
         </button>
@@ -256,7 +256,6 @@ async function useEmail(silent = false) {
   stopTimer();
   if (!silent) toast('📬',`Inbox ${user}@${S.domain} aktif!`);
   await loadMsgs();
-  startTimer();
 }
 
 function randomEmail() {
@@ -304,7 +303,7 @@ async function loadMsgs() {
   
   document.getElementById('rbtn').classList.remove('spin');
   
-  resetCd();
+  startTimer();
 }
 
 function render(msgs) {
@@ -394,25 +393,28 @@ function closeM() { document.getElementById('ov').classList.remove('on'); S.open
 
 // ── TIMER ──────────────────────────────────────────────────────────────────
 function startTimer() {
-  stopTimer();
-  S.timer = setInterval(() => loadMsgs(), 5000);
+  clearTimeout(S.timer);
+  
+  S.timer = setTimeout(() => resetTimer(), 5000);
 }
-
-function resetCd() {
+  
+async function resetTimer() {
   let sec = 0;
   const el = document.getElementById('lastUpdate');
   
-  clearInterval(S.secTimer);
-  S.secTimer = setInterval(() => {
-    sec++;
-    const el = document.getElementById('lastUpdate');
-    if (el) el.textContent = sec < 60 ? `${sec}s` : `${Math.floor(sec/60)}m`;
-  }, 1000);
-}
+  el.textContent = `${sec}s`;
 
-function stopTimer() {
-  clearInterval(S.timer);
   clearInterval(S.secTimer);
+  
+  await loadMsgs();
+
+  S.secTimer = setInterval(() => {
+    const el = document.getElementById('lastUpdate');
+    
+    if (el) el.textContent = `${sec}s`;
+
+    sec++;
+  }, 1000);
 }
   
 // ── UTILS ──────────────────────────────────────────────────────────────────
