@@ -309,8 +309,7 @@ async function loadMsgs(resetTimer = true) {
     render(msgs);
   } catch(e) {
     // FIX 1: toast dipanggil dengan dua argumen yang benar
-    toast('❌', 'Gagal memuat pesan');
-    console.error('loadMsgs error:', e);
+    toast('❌', `Gagal memuat pesan: ${e?.message || String(e)}`);
   }
 
   document.getElementById('rbtn').classList.remove('spin');
