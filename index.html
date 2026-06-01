@@ -69,7 +69,7 @@ main{padding:32px 0 60px}
 .eitem{background:var(--s1);border:1px solid var(--bd);border-radius:12px;padding:17px 19px;cursor:pointer;transition:all .17s;position:relative;overflow:hidden;display:flex;align-items:center;gap:14px}
 .eitem:hover{border-color:var(--ac);background:var(--s2);transform:translateY(-1px);box-shadow:0 4px 18px rgba(0,0,0,.3)}
 .eitem.unread::before{content:'';position:absolute;left:0;top:0;bottom:0;width:3px;background:var(--ac);border-radius:3px 0 0 3px}
-.eitem-body{flex:1;min-width:0}
+.eitem-body{display:flex;align-items:center;min-width:0}
 .erow{display:flex;align-items:center;justify-content:space-between;margin-bottom:4px;gap:10px}
 .efrom{font-weight:600;font-size:13px;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .etime{font-size:11px;color:var(--mu);font-family:var(--mono);white-space:nowrap}
