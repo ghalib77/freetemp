@@ -152,6 +152,11 @@ footer{border-top:1px solid var(--bd);padding:20px 0;text-align:center;font-size
           <span class="email-at">@</span>
           <span class="email-domain" id="domainDisp">domain.com</span>
         </div>
+        <!-- FIX 2: Tombol "Gunakan" ditambahkan -->
+        <button class="btn btn-ac" onclick="useEmail()">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+          Gunakan
+        </button>
         <button class="btn btn-gh" onclick="randomEmail()">
           <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0114.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0020.49 15"/></svg>
           Acak
@@ -182,12 +187,12 @@ footer{border-top:1px solid var(--bd);padding:20px 0;text-align:center;font-size
           Refresh
         </button>
         <button class="rbtn" onclick="clearAll()" style="color:var(--rd)">
-          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4a1 1 0 011-1h4a1 1 0 011 1v2"/></svg>
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/></svg>
           Hapus Semua
         </button>
       </div>
     </div>
-    <div id="list"><div class="empty"><span class="empty-ic">⚙️</span><div class="empty-t">Konfigurasi dulu</div><div class="empty-s">Masukkan URL Worker kamu di atas,<br>lalu ketik nama email dan klik <b>Gunakan</b></div></div></div>
+    <div id="list"><div class="empty"><span class="empty-ic">📭</span><div class="empty-t">Inbox kosong</div><div class="empty-s">Masukkan nama email lalu klik <b>Gunakan</b><br>atau klik <b>Acak</b> untuk nama otomatis</div></div></div>
   </div>
 </main>
 
@@ -303,8 +308,9 @@ async function loadMsgs(resetTimer = true) {
 
     render(msgs);
   } catch(e) {
-    // toast('❌', 'Gagal memuat pesan');
-    toast(e.toString());
+    // FIX 1: toast dipanggil dengan dua argumen yang benar
+    toast('❌', 'Gagal memuat pesan');
+    console.error('loadMsgs error:', e);
   }
 
   document.getElementById('rbtn').classList.remove('spin');
@@ -337,7 +343,7 @@ function render(msgs) {
         </div>
         <div class="esubj">${esc(m.subject||'(Tanpa Judul)')}</div>
       </div>
-      <button class="edel" onclick="delMsg('${m.id}')" title="Hapus">
+      <button class="edel" onclick="event.stopPropagation();delMsg('${m.id}')" title="Hapus">
         <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/></svg>
       </button>
     </div>`).join('')}</div>`;
