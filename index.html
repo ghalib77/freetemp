@@ -163,7 +163,7 @@ footer{border-top:1px solid var(--bd);padding:20px 0;text-align:center;font-size
       </div>
       <div class="refresh-info">
         <div class="refresh-pulse" id="refreshPulse"></div>
-        <span>Auto-refresh aktif · terakhir <span id="lastUpdate">baru saja</span></span>
+        <span>Auto-refresh aktif · refresh dalam <span id="lastUpdate"></span></span>
       </div>
     </div>
 
@@ -402,12 +402,12 @@ function startTimer() {
 function resetCd() {
   let sec = 0;
   const el = document.getElementById('lastUpdate');
-  if (el) el.textContent = 'baru saja';
+  
   clearInterval(S.secTimer);
   S.secTimer = setInterval(() => {
     sec++;
     const el = document.getElementById('lastUpdate');
-    if (el) el.textContent = sec < 60 ? `${sec}d lalu` : `${Math.floor(sec/60)}m lalu`;
+    if (el) el.textContent = sec < 60 ? `${sec}s` : `${Math.floor(sec/60)}m`;
   }, 1000);
 }
 
