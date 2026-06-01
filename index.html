@@ -393,17 +393,16 @@ function closeM() { document.getElementById('ov').classList.remove('on'); S.open
 
 // ── TIMER ──────────────────────────────────────────────────────────────────
 function startTimer() {
-  stopTimer(); S.cd = 30; updCd();
+  stopTimer(); S.cd = 5; updCd(); // ← ganti 30 jadi 5
   S.timer = setInterval(()=>{ S.cd--; updCd(); if(S.cd<=0) loadMsgs(); }, 1000);
 }
-function stopTimer() { clearInterval(S.timer); }
-function resetCd() { S.cd = 30; updCd(); }
+function resetCd() { S.cd = 5; updCd(); } // ← ganti 30 jadi 5
 function updCd() {
   const v = Math.max(0, S.cd);
   document.getElementById('cd').textContent = v;
-  document.getElementById('pf').style.width = (v/30*100)+'%';
+  document.getElementById('pf').style.width = (v/5*100)+'%'; // ← ganti 30 jadi 5
 }
-
+  
 // ── UTILS ──────────────────────────────────────────────────────────────────
 function setStatus(s) {
   const d=document.getElementById('dot'), t=document.getElementById('stxt');
