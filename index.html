@@ -58,8 +58,7 @@ main{padding:32px 0 60px}
 .inbox-hdr{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px}
 .inbox-ttl{display:flex;align-items:center;gap:9px;}
 .inbox-shdr{display:flex;align-items:center;gap:9px;}
-.badge {display:flex;align-items:center;justify-content:center;padding:2px 8px;border-radius:4px;font-size: 12px;font-weight:700;}
-.badge.badge-empty {background: var(--s2);color: var(--mu);}
+.badge {display:flex;align-items:center;justify-content:center;padding:2px 8px;border-radius:4px;font-size: 12px;font-weight:700;background: var(--s2);color: var(--mu);}
 .inbox-actions{display:flex;gap:8px}
 .rbtn{display:flex;align-items:center;gap:6px;font-size:12px;font-weight:600;color:var(--mu);cursor:pointer;background:none;border:1px solid var(--bd);border-radius:8px;padding:7px 11px;font-family:var(--sans);transition:all .17s}
 .rbtn:hover{color:var(--ac);border-color:var(--ac)}
@@ -175,7 +174,7 @@ footer{border-top:1px solid var(--bd);padding:20px 0;text-align:center;font-size
           <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 12 16 12 14 15 10 15 8 12 2 12"/><path d="M5.45 5.11L2 12v6a2 2 0 002 2h16a2 2 0 002-2v-6l-3.45-6.89A2 2 0 0016.76 4H7.24a2 2 0 00-1.79 1.11z"/></svg>
           <span>Inbox</span>
         </div>
-        <span class="badge badge-empty" id="badge">0</span>
+        <span class="badge" id="badge">0</span>
       </div>
       <div class="inbox-actions">
         <button class="rbtn" id="rbtn" onclick="loadMsgs()">
@@ -189,7 +188,6 @@ footer{border-top:1px solid var(--bd);padding:20px 0;text-align:center;font-size
       </div>
     </div>
     <div id="list"><div class="empty"><span class="empty-ic">⚙️</span><div class="empty-t">Konfigurasi dulu</div><div class="empty-s">Masukkan URL Worker kamu di atas,<br>lalu ketik nama email dan klik <b>Gunakan</b></div></div></div>
-
   </div>
 </main>
 
@@ -286,19 +284,26 @@ function doCopy() {
 // ── MESSAGES ───────────────────────────────────────────────────────────────
 async function loadMsgs() {
   if (!S.user || !API_URL) return;
+  
   document.getElementById('rbtn').classList.add('spin');
+  
   try {
     const email = `${S.user}@${S.domain}`;
     const r = await fetch(`${API_URL}/api/messages?email=${encodeURIComponent(email)}`);
     const msgs = await r.json();
     const prevCount = S.msgs.length;
+    
     S.msgs = msgs;
+    
     if (msgs.length > prevCount && prevCount > 0) toast('📨',`${msgs.length - prevCount} email baru!`);
+    
     render(msgs);
   } catch(e) {
     toast('❌','Gagal memuat pesan');
   }
+  
   document.getElementById('rbtn').classList.remove('spin');
+  
   resetCd();
 }
 
