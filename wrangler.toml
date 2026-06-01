@@ -5,17 +5,17 @@ compatibility_flags = ["nodejs_compat"]
 
 # ── Ganti MAIL_DOMAIN dengan domain kamu ─────────────────────────────────────
 [vars]
-MAIL_DOMAIN = "GANTI_DENGAN_DOMAIN_KAMU.com"
+MAIL_DOMAIN = "mediasaya.web.id"
 
 # ── KV Namespace ─────────────────────────────────────────────────────────────
 # Jalankan dulu: npx wrangler kv namespace create MAIL_KV
 # Lalu salin id-nya ke sini ↓
 [[kv_namespaces]]
 binding = "MAIL_KV"
-id      = "GANTI_DENGAN_KV_ID_KAMU"
+id      = "366e8c8e0a7941f8983d8fef35983109"
 
 # ── Email Routing ─────────────────────────────────────────────────────────────
 # Worker ini akan menangani SEMUA email yang masuk ke domain kamu
 [[email.routes]]
-pattern   = "*@GANTI_DENGAN_DOMAIN_KAMU.com"
-zone_name = "GANTI_DENGAN_DOMAIN_KAMU.com"
+pattern   = "*@mediasaya.web.id"
+zone_name = "mediasaya.web.id"
