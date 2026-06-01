@@ -1,0 +1,459 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>TempBox</title>
+<link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=DM+Sans:wght@300;400;500;700&display=swap" rel="stylesheet"/>
+<style>
+:root{--bg:#0d0f14;--s1:#161920;--s2:#1e222e;--bd:#2a2f3e;--ac:#5b8aff;--ac2:#a78bfa;--gn:#34d399;--rd:#f87171;--yw:#fbbf24;--tx:#e2e8f0;--mu:#64748b;--mono:'Space Mono',monospace;--sans:'DM Sans',sans-serif}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+body{font-family:var(--sans);background:var(--bg);color:var(--tx);min-height:100vh;overflow-x:hidden}
+body::before{content:'';position:fixed;inset:0;background-image:linear-gradient(rgba(91,138,255,.03) 1px,transparent 1px),linear-gradient(90deg,rgba(91,138,255,.03) 1px,transparent 1px);background-size:40px 40px;pointer-events:none;z-index:0}
+.orb{position:fixed;border-radius:50%;pointer-events:none;z-index:0}
+.orb1{top:-200px;right:-200px;width:600px;height:600px;background:radial-gradient(circle,rgba(91,138,255,.08) 0%,transparent 70%)}
+.orb2{bottom:-200px;left:-200px;width:500px;height:500px;background:radial-gradient(circle,rgba(167,139,250,.06) 0%,transparent 70%)}
+.wrap{max-width:960px;margin:0 auto;padding:0 20px;position:relative;z-index:1}
+header{padding:26px 0 20px;border-bottom:1px solid var(--bd);position:relative;z-index:1}
+.hdr{display:flex;align-items:center;justify-content:space-between}
+.logo{display:flex;align-items:center;gap:10px}
+.logo-ic{width:38px;height:38px;background:linear-gradient(135deg,var(--ac),var(--ac2));border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:18px}
+.logo-name{font-family:var(--mono);font-size:19px;font-weight:700;background:linear-gradient(135deg,#fff 40%,var(--ac2));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+.logo-sub{font-size:11px;color:var(--mu);letter-spacing:.4px;margin-top:1px}
+.status{display:flex;align-items:center;gap:7px;font-size:12px;color:var(--mu);font-family:var(--mono)}
+.dot{width:8px;height:8px;border-radius:50%;animation:blink 2s infinite}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:.45}}
+main{padding:32px 0 60px}
+.card{background:var(--s1);border:1px solid var(--bd);border-radius:16px;padding:26px;margin-bottom:22px;position:relative;overflow:hidden}
+.card::before{content:'';position:absolute;top:0;left:0;right:0;height:1px;background:linear-gradient(90deg,transparent,var(--ac),transparent);opacity:.5}
+.lbl{font-size:11px;font-weight:600;letter-spacing:1.8px;text-transform:uppercase;color:var(--mu);margin-bottom:13px}
+
+/* Email composer */
+.email-row{display:flex;align-items:center;gap:9px;flex-wrap:wrap}
+.email-builder{display:flex;flex:1;min-width:220px;align-items:center;background:var(--s2);border:1px solid var(--bd);border-radius:10px;overflow:hidden;transition:border-color .2s}
+.email-builder:focus-within{border-color:var(--ac)}
+.email-user{flex:1;background:none;border:none;outline:none;padding:13px 15px;font-family:var(--mono);font-size:14px;color:var(--tx)}
+.email-user::placeholder{color:var(--mu)}
+.email-at{padding:13px 4px;font-family:var(--mono);font-size:14px;color:var(--mu)}
+.email-domain{padding:13px 15px;font-family:var(--mono);font-size:14px;color:var(--ac2);font-weight:700;white-space:nowrap}
+
+.btn{display:inline-flex;align-items:center;gap:6px;padding:11px 16px;border-radius:9px;font-size:13px;font-weight:600;font-family:var(--sans);cursor:pointer;border:none;transition:all .17s;white-space:nowrap}
+.btn:active{transform:scale(.97)}
+.btn-ac{background:var(--ac);color:#fff}.btn-ac:hover{background:#7ba3ff;box-shadow:0 0 18px rgba(91,138,255,.3)}
+.btn-gh{background:var(--s2);color:var(--tx);border:1px solid var(--bd)}.btn-gh:hover{border-color:var(--ac);color:var(--ac)}
+.btn-ok{background:rgba(52,211,153,.12);color:var(--gn);border:1px solid rgba(52,211,153,.25)}
+.btn-rd{background:rgba(248,113,113,.1);color:var(--rd);border:1px solid rgba(248,113,113,.2)}.btn-rd:hover{background:rgba(248,113,113,.18)}
+
+.cdown{margin-top:14px;display:flex;align-items:center;gap:9px;font-size:12px;color:var(--mu)}
+.prog-t{flex:1;height:3px;background:var(--bd);border-radius:3px;overflow:hidden}
+.prog-f{height:100%;background:linear-gradient(90deg,var(--ac),var(--ac2));border-radius:3px;transition:width 1s linear}
+
+/* Setup banner */
+.setup-banner{background:rgba(251,191,36,.08);border:1px solid rgba(251,191,36,.25);border-radius:12px;padding:16px 20px;margin-bottom:22px;display:none}
+.setup-banner.show{display:block}
+.setup-title{font-size:13px;font-weight:700;color:var(--yw);margin-bottom:6px}
+.setup-text{font-size:12px;color:var(--mu);line-height:1.65}
+.setup-text code{font-family:var(--mono);background:var(--s2);padding:1px 6px;border-radius:4px;font-size:11px;color:var(--ac2)}
+
+.inbox-hdr{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px}
+.inbox-ttl{display:flex;align-items:center;gap:9px;}
+.inbox-shdr{display:flex;align-items:center;gap:9px;}
+.badge {display:flex;align-items:center;justify-content:center;padding:2px 8px;border-radius:4px;font-size: 12px;font-weight:700;}
+.badge.badge-empty {background: var(--s2);color: var(--mu);}
+.inbox-actions{display:flex;gap:8px}
+.rbtn{display:flex;align-items:center;gap:6px;font-size:12px;font-weight:600;color:var(--mu);cursor:pointer;background:none;border:1px solid var(--bd);border-radius:8px;padding:7px 11px;font-family:var(--sans);transition:all .17s}
+.rbtn:hover{color:var(--ac);border-color:var(--ac)}
+.rbtn.spin svg{animation:rot 1s linear infinite}
+@keyframes rot{to{transform:rotate(360deg)}}
+
+.emails{display:flex;flex-direction:column;gap:9px}
+.eitem{background:var(--s1);border:1px solid var(--bd);border-radius:12px;padding:17px 19px;cursor:pointer;transition:all .17s;position:relative;overflow:hidden;display:flex;align-items:center;gap:14px}
+.eitem:hover{border-color:var(--ac);background:var(--s2);transform:translateY(-1px);box-shadow:0 4px 18px rgba(0,0,0,.3)}
+.eitem.unread::before{content:'';position:absolute;left:0;top:0;bottom:0;width:3px;background:var(--ac);border-radius:3px 0 0 3px}
+.eitem-body{flex:1;min-width:0}
+.erow{display:flex;align-items:center;justify-content:space-between;margin-bottom:4px;gap:10px}
+.efrom{font-weight:600;font-size:13px;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.etime{font-size:11px;color:var(--mu);font-family:var(--mono);white-space:nowrap}
+.esubj{font-size:13px;font-weight:500;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--tx)}
+.edel{opacity:0;padding:6px 8px;border-radius:7px;background:rgba(248,113,113,.1);border:none;cursor:pointer;color:var(--rd);font-size:12px;transition:opacity .15s;flex-shrink:0}
+.eitem:hover .edel{opacity:1}
+
+.empty{text-align:center;padding:55px 20px;background:var(--s1);border:1px dashed var(--bd);border-radius:16px}
+.empty-ic{font-size:44px;margin-bottom:14px;opacity:.45;display:block}
+.empty-t{font-size:15px;font-weight:600;color:var(--mu);margin-bottom:6px}
+.empty-s{font-size:13px;color:var(--mu);opacity:.7;line-height:1.65}
+
+/* Modal */
+.overlay{position:fixed;inset:0;background:rgba(0,0,0,.78);backdrop-filter:blur(7px);z-index:100;display:none;align-items:center;justify-content:center;padding:18px}
+.overlay.on{display:flex;animation:fi .2s ease}
+@keyframes fi{from{opacity:0}to{opacity:1}}
+.modal{background:var(--s1);border:1px solid var(--bd);border-radius:20px;width:100%;max-width:700px;max-height:88vh;overflow-y:auto;animation:su .22s ease}
+@keyframes su{from{transform:translateY(28px);opacity:0}to{transform:translateY(0);opacity:1}}
+.mtop{position:sticky;top:0;background:var(--s1);border-bottom:1px solid var(--bd);padding:18px 22px;display:flex;align-items:flex-start;justify-content:space-between;gap:14px;z-index:1;border-radius:20px 20px 0 0}
+.mmeta{flex:1;min-width:0}
+.msubj{font-size:17px;font-weight:700;margin-bottom:7px}
+.mfrom{font-size:12px;color:var(--mu);margin-bottom:3px}
+.mtime{font-size:11px;color:var(--mu);font-family:var(--mono)}
+.mtop-actions{display:flex;gap:8px;align-items:flex-start}
+.mclose{width:32px;height:32px;border-radius:8px;background:var(--s2);border:1px solid var(--bd);cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:16px;color:var(--mu);transition:all .15s}
+.mclose:hover{background:var(--rd);color:#fff;border-color:var(--rd)}
+.mbody{padding:22px}
+.mtext{font-family:var(--mono);font-size:12px;line-height:1.75;color:var(--tx);white-space:pre-wrap;word-break:break-word;background:var(--s2);border:1px solid var(--bd);border-radius:10px;padding:15px}
+.mhtml-wrap{border-radius:10px;overflow:hidden;border:1px solid var(--bd);background:#fff}
+.mhtml-wrap iframe{width:100%;min-height:300px;border:none;display:block}
+
+/* Config panel */
+.cfg-card{background:rgba(91,138,255,.05);border:1px solid rgba(91,138,255,.2);border-radius:14px;padding:22px;margin-bottom:22px}
+.cfg-lbl{font-size:11px;font-weight:600;letter-spacing:1.8px;text-transform:uppercase;color:var(--ac);margin-bottom:12px}
+.cfg-row{display:flex;gap:9px;align-items:center;flex-wrap:wrap}
+.cfg-input{flex:1;min-width:200px;background:var(--s2);border:1px solid var(--bd);border-radius:9px;padding:11px 14px;font-family:var(--mono);font-size:13px;color:var(--tx);outline:none;transition:border-color .2s}
+.cfg-input:focus{border-color:var(--ac)}
+.cfg-input::placeholder{color:var(--mu)}
+.cfg-note{font-size:12px;color:var(--mu);margin-top:10px;line-height:1.55}
+.cfg-note code{font-family:var(--mono);background:var(--s2);padding:1px 6px;border-radius:4px;font-size:11px;color:var(--ac2)}
+
+.toast{position:fixed;bottom:22px;right:22px;background:var(--s2);border:1px solid var(--bd);border-radius:12px;padding:13px 18px;font-size:13px;font-weight:500;color:var(--tx);display:flex;align-items:center;gap:9px;z-index:200;box-shadow:0 8px 28px rgba(0,0,0,.4);transform:translateY(80px);opacity:0;transition:all .3s cubic-bezier(.34,1.56,.64,1)}
+.toast.on{transform:translateY(0);opacity:1}
+footer{border-top:1px solid var(--bd);padding:20px 0;text-align:center;font-size:12px;color:var(--mu);position:relative;z-index:1}
+::-webkit-scrollbar{width:5px}::-webkit-scrollbar-track{background:var(--bg)}::-webkit-scrollbar-thumb{background:var(--bd);border-radius:3px}
+@media(max-width:580px){.btn{padding:10px 12px;font-size:12px}.email-row{gap:7px}}
+</style>
+</head>
+<body>
+<div class="orb orb1"></div><div class="orb orb2"></div>
+
+<header>
+  <div class="wrap">
+    <div class="hdr">
+      <div class="logo">
+        <div class="logo-ic">📬</div>
+        <div>
+          <div class="logo-name">TempBox</div>
+          <div class="logo-sub">Custom Domain · Anonim · Gratis</div>
+        </div>
+      </div>
+      <div class="status">
+        <span class="dot" id="dot" style="background:var(--yw);box-shadow:0 0 8px var(--yw)"></span>
+        <span id="stxt">Memulai...</span>
+      </div>
+    </div>
+  </div>
+</header>
+
+<main>
+  <div class="wrap">
+    <!-- Email Card -->
+    <div class="card">
+      <div class="lbl">📧 Buat Alamat Email</div>
+      <div class="email-row">
+        <div class="email-builder">
+          <input class="email-user" id="userIn" placeholder="namaanda" maxlength="40"
+            onkeydown="if(event.key==='Enter')useEmail()"/>
+          <span class="email-at">@</span>
+          <span class="email-domain" id="domainDisp">domain.com</span>
+        </div>
+        <button class="btn btn-ac" onclick="useEmail()">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+          Gunakan
+        </button>
+        <button class="btn btn-gh" onclick="randomEmail()">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0114.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0020.49 15"/></svg>
+          Acak
+        </button>
+        <button class="btn btn-gh" id="copyBtn" onclick="doCopy()">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>
+          Salin
+        </button>
+      </div>
+      <div class="cdown">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+        Refresh dalam <span id="cd">30</span>s
+        <div class="prog-t"><div class="prog-f" id="pf" style="width:100%"></div></div>
+      </div>
+    </div>
+
+    <!-- Inbox -->
+    <div class="inbox-hdr">
+      <div class="inbox-ttl">
+        <div class="inbox-shdr">
+          <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 12 16 12 14 15 10 15 8 12 2 12"/><path d="M5.45 5.11L2 12v6a2 2 0 002 2h16a2 2 0 002-2v-6l-3.45-6.89A2 2 0 0016.76 4H7.24a2 2 0 00-1.79 1.11z"/></svg>
+          <span>Inbox</span>
+        </div>
+        <span class="badge badge-empty">0</span>
+      </div>
+      <div class="inbox-actions">
+        <button class="rbtn" id="rbtn" onclick="loadMsgs()">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0114.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0020.49 15"/></svg>
+          Refresh
+        </button>
+        <button class="rbtn" onclick="clearAll()" style="color:var(--rd)">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4a1 1 0 011-1h4a1 1 0 011 1v2"/></svg>
+          Hapus Semua
+        </button>
+      </div>
+    </div>
+    <div id="list"><div class="empty"><span class="empty-ic">⚙️</span><div class="empty-t">Konfigurasi dulu</div><div class="empty-s">Masukkan URL Worker kamu di atas,<br>lalu ketik nama email dan klik <b>Gunakan</b></div></div></div>
+
+  </div>
+</main>
+
+<footer><div class="wrap">TempBox · Custom Domain · Powered by Cloudflare Workers</div></footer>
+
+<!-- Modal -->
+<div class="overlay" id="ov" onclick="if(event.target===this)closeM()">
+  <div class="modal">
+    <div class="mtop">
+      <div class="mmeta">
+        <div class="msubj" id="msubj">—</div>
+        <div class="mfrom" id="mfrom">Dari: —</div>
+        <div class="mtime" id="mtime">—</div>
+      </div>
+      <div class="mtop-actions">
+        <button class="mclose btn-rd" id="mdelBtn" onclick="delOpenMsg()" title="Hapus email ini" style="font-size:13px;width:auto;padding:0 10px;gap:5px">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/></svg>Hapus
+        </button>
+        <button class="mclose" onclick="closeM()">✕</button>
+      </div>
+    </div>
+    <div class="mbody" id="mbody"></div>
+  </div>
+</div>
+
+<div class="toast" id="toast"><span id="tic"></span><span id="tmsg"></span></div>
+
+<script>
+// ── CONFIG ─────────────────────────────────────────────────────────────────
+const LS_API  = 'tb_api_url';
+const LS_USER = 'tb_last_user';
+
+let API_URL = localStorage.getItem(LS_API) || '';
+let S = { user:'', domain:'', msgs:[], cd:30, timer:null, openId:null };
+
+// ── INIT ───────────────────────────────────────────────────────────────────
+async function init() {
+  if (API_URL) {
+    document.getElementById('cfgCard').style.display = 'none';
+    document.getElementById('apiUrlInput').value = API_URL;
+    await loadDomain();
+    const lastUser = localStorage.getItem(LS_USER);
+    if (lastUser) {
+      document.getElementById('userIn').value = lastUser;
+      await useEmail(true);
+    }
+  } else {
+    setStatus('load');
+  }
+}
+
+function saveConfig() {
+  const url = document.getElementById('apiUrlInput').value.trim().replace(/\/$/, '');
+  if (!url.startsWith('http')) { toast('⚠️','Masukkan URL yang valid'); return; }
+  API_URL = url;
+  localStorage.setItem(LS_API, url);
+  document.getElementById('cfgCard').style.display = 'none';
+  toast('✅','URL Worker disimpan!');
+  loadDomain();
+}
+
+async function loadDomain() {
+  try {
+    const r = await fetch(`${API_URL}/api/domain`);
+    const d = await r.json();
+    S.domain = d.domain || 'domain.com';
+    document.getElementById('domainDisp').textContent = S.domain;
+    setStatus('ok');
+  } catch(e) {
+    setStatus('err');
+    toast('❌','Tidak bisa terhubung ke Worker. Cek URL-nya.');
+  }
+}
+
+// ── EMAIL ACTIONS ──────────────────────────────────────────────────────────
+async function useEmail(silent = false) {
+  if (!API_URL) { toast('⚠️','Simpan URL Worker dulu'); return; }
+  const user = document.getElementById('userIn').value.trim().toLowerCase();
+  if (!user) { toast('⚠️','Masukkan nama email'); return; }
+  if (!/^[a-z0-9._+\-]+$/.test(user)) { toast('⚠️','Hanya huruf, angka, titik, atau strip'); return; }
+
+  S.user = user;
+  localStorage.setItem(LS_USER, user);
+  stopTimer();
+  if (!silent) toast('📬',`Inbox ${user}@${S.domain} aktif!`);
+  await loadMsgs();
+  startTimer();
+}
+
+function randomEmail() {
+  const chars = 'abcdefghijklmnopqrstuvwxyz0123456789';
+  const name = Array.from({length:8}, ()=>chars[Math.floor(Math.random()*chars.length)]).join('');
+  document.getElementById('userIn').value = name;
+  useEmail();
+}
+
+function doCopy() {
+  if (!S.user) { toast('⚠️','Pilih email dulu'); return; }
+  const email = `${S.user}@${S.domain}`;
+  navigator.clipboard.writeText(email).then(() => {
+    const b = document.getElementById('copyBtn');
+    b.innerHTML = `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>Tersalin!`;
+    b.classList.add('btn-ok'); b.classList.remove('btn-gh');
+    toast('📋',`${email} disalin!`);
+    setTimeout(()=>{
+      b.innerHTML=`<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>Salin`;
+      b.classList.remove('btn-ok'); b.classList.add('btn-gh');
+    }, 2000);
+  });
+}
+
+// ── MESSAGES ───────────────────────────────────────────────────────────────
+async function loadMsgs() {
+  if (!S.user || !API_URL) return;
+  document.getElementById('rbtn').classList.add('spin');
+  try {
+    const email = `${S.user}@${S.domain}`;
+    const r = await fetch(`${API_URL}/api/messages?email=${encodeURIComponent(email)}`);
+    const msgs = await r.json();
+    const prevCount = S.msgs.length;
+    S.msgs = msgs;
+    if (msgs.length > prevCount && prevCount > 0) toast('📨',`${msgs.length - prevCount} email baru!`);
+    render(msgs);
+  } catch(e) {
+    toast('❌','Gagal memuat pesan');
+  }
+  document.getElementById('rbtn').classList.remove('spin');
+  resetCd();
+}
+
+function render(msgs) {
+  const badge = document.getElementById('badge');
+  badge.textContent = msgs.length;
+  badge.classList.toggle('badge-empty', !msgs.length);
+
+  if (!msgs.length) {
+    document.getElementById('list').innerHTML = `
+      <div class="empty">
+        <span class="empty-ic">📭</span>
+        <div class="empty-t">Inbox kosong</div>
+        <div class="empty-s">Kirim email ke<br><b style="color:var(--ac);font-family:var(--mono)">${S.user}@${S.domain}</b><br>untuk mencobanya</div>
+      </div>`;
+    return;
+  }
+
+  document.getElementById('list').innerHTML = `<div class="emails">${msgs.map(m=>`
+    <div class="eitem ${m.seen?'':'unread'}" onclick="openMsg('${m.id}')">
+      <div class="eitem-body">
+        <div class="erow">
+          <div class="efrom">${esc(m.fromName||m.from)}</div>
+          <div class="etime">${fmtTime(m.date)}</div>
+        </div>
+        <div class="esubj">${esc(m.subject||'(Tanpa Judul)')}</div>
+      </div>
+      <button class="edel" onclick="event.stopPropagation();delMsg('${m.id}')" title="Hapus">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/></svg>
+      </button>
+    </div>`).join('')}</div>`;
+}
+
+async function openMsg(id) {
+  S.openId = id;
+  try {
+    const email = `${S.user}@${S.domain}`;
+    const r = await fetch(`${API_URL}/api/messages/${id}?email=${encodeURIComponent(email)}`);
+    const m = await r.json();
+    document.getElementById('msubj').textContent = m.subject || '(Tanpa Judul)';
+    document.getElementById('mfrom').textContent = `Dari: ${m.fromName ? m.fromName + ' <' + m.from + '>' : m.from}`;
+    document.getElementById('mtime').textContent = m.date || '';
+    const body = document.getElementById('mbody');
+    if (m.htmlBody && m.htmlBody.trim()) {
+      body.innerHTML = `<div class="mhtml-wrap"><iframe id="mif" sandbox="allow-same-origin allow-popups"></iframe></div>`;
+      const f = document.getElementById('mif');
+      const d = f.contentDocument || f.contentWindow.document;
+      d.open(); d.write(m.htmlBody); d.close();
+      setTimeout(()=>{try{f.style.height=(d.body.scrollHeight+30)+'px'}catch(e){}},350);
+    } else {
+      body.innerHTML = `<div class="mtext">${esc(m.textBody||m.body||'(Kosong)')}</div>`;
+    }
+    document.getElementById('ov').classList.add('on');
+    // Update seen in local list
+    S.msgs = S.msgs.map(msg => msg.id === id ? {...msg, seen:true} : msg);
+    render(S.msgs);
+  } catch(e) { toast('❌','Gagal membuka email'); }
+}
+
+async function delMsg(id) {
+  const email = `${S.user}@${S.domain}`;
+  try {
+    await fetch(`${API_URL}/api/messages/${id}?email=${encodeURIComponent(email)}`, {method:'DELETE'});
+    S.msgs = S.msgs.filter(m => m.id !== id);
+    render(S.msgs);
+    toast('🗑️','Email dihapus');
+  } catch(e) { toast('❌','Gagal menghapus'); }
+}
+
+async function delOpenMsg() {
+  if (!S.openId) return;
+  await delMsg(S.openId);
+  closeM();
+}
+
+async function clearAll() {
+  if (!S.user || !S.msgs.length) return;
+  if (!confirm(`Hapus semua ${S.msgs.length} email?`)) return;
+  const email = `${S.user}@${S.domain}`;
+  try {
+    await fetch(`${API_URL}/api/inbox?email=${encodeURIComponent(email)}`, {method:'DELETE'});
+    S.msgs = []; render([]);
+    toast('🗑️','Semua email dihapus');
+  } catch(e) { toast('❌','Gagal menghapus semua'); }
+}
+
+function closeM() { document.getElementById('ov').classList.remove('on'); S.openId = null; }
+
+// ── TIMER ──────────────────────────────────────────────────────────────────
+function startTimer() {
+  stopTimer(); S.cd = 30; updCd();
+  S.timer = setInterval(()=>{ S.cd--; updCd(); if(S.cd<=0) loadMsgs(); }, 1000);
+}
+function stopTimer() { clearInterval(S.timer); }
+function resetCd() { S.cd = 30; updCd(); }
+function updCd() {
+  const v = Math.max(0, S.cd);
+  document.getElementById('cd').textContent = v;
+  document.getElementById('pf').style.width = (v/30*100)+'%';
+}
+
+// ── UTILS ──────────────────────────────────────────────────────────────────
+function setStatus(s) {
+  const d=document.getElementById('dot'), t=document.getElementById('stxt');
+  const c={ok:'var(--gn)',err:'var(--rd)',load:'var(--yw)'}[s];
+  const l={ok:'Online',err:'Error',load:'Menghubungkan...'}[s];
+  d.style.background=c; d.style.boxShadow=`0 0 8px ${c}`; t.textContent=l;
+}
+function fmtTime(s) {
+  if (!s) return '—';
+  try {
+    const d=new Date(s), now=new Date(), diff=(now-d)/1000;
+    if(diff<60) return 'Baru saja';
+    if(diff<3600) return Math.floor(diff/60)+'m lalu';
+    if(diff<86400) return Math.floor(diff/3600)+'j lalu';
+    return d.toLocaleDateString('id-ID',{day:'numeric',month:'short'});
+  } catch {return s;}
+}
+function esc(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;')}
+let tt;
+function toast(ic,msg){
+  document.getElementById('tic').textContent=ic;
+  document.getElementById('tmsg').textContent=msg;
+  const t=document.getElementById('toast');
+  t.classList.add('on'); clearTimeout(tt);
+  tt=setTimeout(()=>t.classList.remove('on'),3500);
+}
+document.addEventListener('keydown',e=>{
+  if(e.key==='Escape')closeM();
+  if(e.key==='r'&&!e.ctrlKey&&!e.metaKey&&document.activeElement.tagName!=='INPUT')loadMsgs();
+});
+
+init();
+</script>
+</body>
+</html>
