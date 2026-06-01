@@ -302,7 +302,8 @@ async function loadMsgs() {
     if (msgs.length > prevCount && prevCount > 0) toast('📨',`${msgs.length - prevCount} email baru!`);
     render(msgs);
   } catch(e) {
-    toast('❌','Gagal memuat pesan');
+    toast('❌', e.message || e.toString());
+    //toast('❌','Gagal memuat pesan');
   }
   document.getElementById('rbtn').classList.remove('spin');
   resetCd();
