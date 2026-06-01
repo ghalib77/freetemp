@@ -393,28 +393,30 @@ function closeM() { document.getElementById('ov').classList.remove('on'); S.open
 
 // ── TIMER ──────────────────────────────────────────────────────────────────
 function startTimer() {
-  clearTimeout(S.timer);
+  clearInterval(S.timer);
   
-  S.timer = setTimeout(() => resetTimer(), 5000);
-}
-  
-async function resetTimer() {
   let sec = 0;
   const el = document.getElementById('lastUpdate');
   
   el.textContent = `${sec}s`;
 
-  clearInterval(S.secTimer);
-  
-  await loadMsgs();
-
-  S.secTimer = setInterval(() => {
+  S.timer = setInterval(async () => {
     const el = document.getElementById('lastUpdate');
     
     if (el) el.textContent = `${sec}s`;
 
+    if(sec >= 5) {
+      await resetTimer();
+    }
+
     sec++;
   }, 1000);
+}
+
+async function resetTimer() {
+  await loadMsgs();
+
+  startTimer();
 }
   
 // ── UTILS ──────────────────────────────────────────────────────────────────
