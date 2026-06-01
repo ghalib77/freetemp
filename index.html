@@ -177,7 +177,7 @@ footer{border-top:1px solid var(--bd);padding:20px 0;text-align:center;font-size
         <span class="badge" id="badge">0</span>
       </div>
       <div class="inbox-actions">
-        <button class="rbtn" id="rbtn" onclick="resetTimer()">
+        <button class="rbtn" id="rbtn" onclick="loadMsgs()">
           <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0114.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0020.49 15"/></svg>
           Refresh
         </button>
@@ -397,8 +397,6 @@ function startTimer() {
   
   let sec = 0;
   const el = document.getElementById('lastUpdate');
-  
-  el.textContent = `${sec}s`;
 
   S.timer = setInterval(async () => {
     const el = document.getElementById('lastUpdate');
@@ -406,15 +404,11 @@ function startTimer() {
     if (el) el.textContent = `${sec}s`;
 
     if(sec >= 5) {
-      await resetTimer();
+      await loadMsgs();
     }
 
     sec++;
   }, 1000);
-}
-
-async function resetTimer() {
-  await loadMsgs();
 }
   
 // ── UTILS ──────────────────────────────────────────────────────────────────
