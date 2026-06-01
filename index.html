@@ -231,16 +231,12 @@ let S = { user:'', domain:'', msgs:[], cd:30, timer:null, openId:null };
 
 // ── INIT ───────────────────────────────────────────────────────────────────
 async function init() {
-  if (API_URL) {
-    document.getElementById('cfgCard').style.display = 'none';
-    await loadDomain();
-    const lastUser = localStorage.getItem(LS_USER);
-    if (lastUser) {
-      document.getElementById('userIn').value = lastUser;
-      await useEmail(true);
-    }
-  } else {
-    setStatus('load');
+  document.getElementById('cfgCard').style.display = 'none';
+  await loadDomain();
+  const lastUser = localStorage.getItem(LS_USER);
+  if (lastUser) {
+    document.getElementById('userIn').value = lastUser;
+    await useEmail(true);
   }
 }
 
