@@ -1,0 +1,21 @@
+name            = "freetemp-worker"
+main            = "worker/index.js"
+compatibility_date = "2024-01-01"
+
+# ── KV Namespace ──────────────────────────────────────────────────────────────
+# Replace id with the value from: wrangler kv:namespace create FREETEMP_EMAILS
+[[kv_namespaces]]
+binding = "FREETEMP_EMAILS"
+id      = "YOUR_KV_NAMESPACE_ID"
+
+# Preview namespace (optional — used by wrangler dev)
+# preview_id = "YOUR_KV_PREVIEW_NAMESPACE_ID"
+
+# ── Email Routing ─────────────────────────────────────────────────────────────
+# Configured via the Cloudflare dashboard (Email → Routing → Catch-all → Worker)
+# No TOML entry needed; the dashboard wires it automatically.
+
+# ── Routes (optional — uncomment if using a custom domain for the worker) ─────
+# routes = [
+#   { pattern = "freetemp-worker.mediasaya.web.id/*", zone_name = "mediasaya.web.id" }
+# ]
