@@ -120,7 +120,10 @@ async function handleInbox(url, env) {
     return json(sorted);
   } catch (e) {
     console.error('Inbox error:', e);
-    return err('Internal Server Error', 500);
+    return err(JSON.stringify({
+  error: 'Inbox error',
+  message: e.message || String(e)
+}), 500);
   }
 }
 
