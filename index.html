@@ -187,6 +187,11 @@
     }
 
     /* ── INBOX SECTION ── */
+    .inbox-actions {
+      display: flex;
+      align-items:center;
+      gap: 10px;
+    }
     .inbox-header {
       display: flex;
       align-items: center;
@@ -513,12 +518,6 @@
       </button>
     </div>
     <div class="card-actions">
-      <button class="btn" id="refreshBtn" onclick="manualRefresh()">
-        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-          <polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 11-2.12-9.36L23 10"/>
-        </svg>
-        Refresh
-      </button>
       <button class="btn btn-danger" onclick="regenerateEmail()">
         <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
           <path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/>
@@ -534,7 +533,15 @@
       Inbox
       <span class="inbox-count" id="inboxCount">0</span>
     </div>
-    <div class="countdown" id="countdown">Auto-refresh in 5s</div>
+    <div class="inbox-actions">
+      <button class="btn" id="refreshBtn" onclick="manualRefresh()">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 11-2.12-9.36L23 10"/>
+          </svg>
+          Refresh
+      </button>
+      <div class="countdown" id="countdown">Auto-refresh in 5s</div>
+    </div>
   </div>
 
   <div class="inbox-list" id="inboxList">
