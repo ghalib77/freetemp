@@ -1,542 +1,288 @@
 /**
- * TempBox Worker — Tanpa Dependency
- * Cloudflare Workers online editor compatible
- *
- * Bindings:
- * KV Namespace → MAIL_KV
- * Variable     → MAIL_DOMAIN
+ * FreeTemp — Cloudflare Worker
+ * Handles:
+ *   1. Inbound email ingestion via Cloudflare Email Routing
+ *   2. REST API: GET /api/inbox  and  GET /api/email/:id
  */
 
-const TTL = 86400;
+const KV_PREFIX  = 'email:';
+const TTL_SECONDS = 7 * 24 * 60 * 60;   // 7 days
+const MAX_EMAILS  = 50;
 
-// ═══════════════════════════════════════════════════════════
-// MIME PARSER
-// ═══════════════════════════════════════════════════════════
+// ── CORS HEADERS ─────────────────────────────────────────────────────────────
+const CORS = {
+  'Access-Control-Allow-Origin':  '*',
+  'Access-Control-Allow-Methods': 'GET, OPTIONS',
+  'Access-Control-Allow-Headers': 'Content-Type',
+};
 
-function parseHeaders(text) {
-  const unfolded = text.replace(/\r\n([ \t])/g, ' ').replace(/\n([ \t])/g, ' ');
-  const headers = {};
+function json(data, status = 200) {
+  return new Response(JSON.stringify(data), {
+    status,
+    headers: { 'Content-Type': 'application/json', ...CORS },
+  });
+}
 
-  for (const line of unfolded.split(/\r?\n/)) {
-    const idx = line.indexOf(':');
+function err(msg, status = 400) {
+  return json({ error: msg }, status);
+}
 
-    if (idx > 0) {
-      const key = line.slice(0, idx).toLowerCase().trim();
-      const val = line.slice(idx + 1).trim();
+// ── ROUTER ───────────────────────────────────────────────────────────────────
+export default {
+  // HTTP fetch handler (REST API)
+  async fetch(request, env) {
+    const url = new URL(request.url);
 
-      if (!headers[key]) headers[key] = val;
+    // Pre-flight CORS
+    if (request.method === 'OPTIONS') {
+      return new Response(null, { status: 204, headers: CORS });
     }
+
+    if (request.method !== 'GET') return err('Method Not Allowed', 405);
+
+    // GET /api/inbox?address=...
+    if (url.pathname === '/api/inbox') {
+      return handleInbox(url, env);
+    }
+
+    // GET /api/email/:id?address=...
+    const emailMatch = url.pathname.match(/^\/api\/email\/([^/]+)$/);
+    if (emailMatch) {
+      return handleEmailDetail(emailMatch[1], url, env);
+    }
+
+    return err('Not Found', 404);
+  },
+
+  // Email handler — called by Cloudflare Email Routing
+  async email(message, env) {
+    try {
+      const raw   = await streamToArrayBuffer(message.raw);
+      const bytes = new Uint8Array(raw);
+      const text  = new TextDecoder('utf-8', { fatal: false }).decode(bytes);
+
+      const parsed = parseMime(text);
+
+      const id          = crypto.randomUUID();
+      const receivedAt  = new Date().toISOString();
+      const toAddress   = (message.to || '').toLowerCase().trim();
+
+      const emailObj = {
+        id,
+        from:       message.from || '',
+        to:         toAddress,
+        subject:    parsed.subject || '(no subject)',
+        receivedAt,
+        bodyHtml:   parsed.bodyHtml  || '',
+        bodyText:   parsed.bodyText  || '',
+      };
+
+      // Key: email:{address}:{timestamp}:{uuid}  — sortable by time
+      const kvKey = `${KV_PREFIX}${toAddress}:${Date.now()}:${id}`;
+      await env.FREETEMP_EMAILS.put(kvKey, JSON.stringify(emailObj), {
+        expirationTtl: TTL_SECONDS,
+      });
+
+    } catch (e) {
+      // Log but don't throw — prevents bounces for storage errors
+      console.error('Email ingest error:', e);
+    }
+  },
+};
+
+// ── HANDLERS ─────────────────────────────────────────────────────────────────
+async function handleInbox(url, env) {
+  const address = (url.searchParams.get('address') || '').toLowerCase().trim();
+  if (!address || !address.includes('@')) return err('Missing or invalid address');
+
+  try {
+    const prefix = `${KV_PREFIX}${address}:`;
+    const list   = await env.FREETEMP_EMAILS.list({ prefix, limit: MAX_EMAILS });
+
+    const emailObjs = await Promise.all(
+      list.keys.map(async ({ name }) => {
+        const val = await env.FREETEMP_EMAILS.get(name);
+        if (!val) return null;
+        try {
+          const obj = JSON.parse(val);
+          // Strip body for list view — keeps payload small
+          const { bodyHtml: _h, bodyText: _t, ...summary } = obj;
+          return summary;
+        } catch { return null; }
+      })
+    );
+
+    // Filter nulls, sort newest-first
+    const sorted = emailObjs
+      .filter(Boolean)
+      .sort((a, b) => new Date(b.receivedAt) - new Date(a.receivedAt));
+
+    return json(sorted);
+  } catch (e) {
+    console.error('Inbox error:', e);
+    return err('Internal Server Error', 500);
+  }
+}
+
+async function handleEmailDetail(id, url, env) {
+  const address = (url.searchParams.get('address') || '').toLowerCase().trim();
+  if (!address || !address.includes('@')) return err('Missing or invalid address');
+  if (!id) return err('Missing email id');
+
+  try {
+    const prefix  = `${KV_PREFIX}${address}:`;
+    const list    = await env.FREETEMP_EMAILS.list({ prefix, limit: 200 });
+
+    // Find the key that ends with our id
+    const entry = list.keys.find(({ name }) => name.endsWith(`:${id}`));
+    if (!entry) return err('Email not found', 404);
+
+    const val = await env.FREETEMP_EMAILS.get(entry.name);
+    if (!val) return err('Email not found', 404);
+
+    return json(JSON.parse(val));
+  } catch (e) {
+    console.error('Email detail error:', e);
+    return err('Internal Server Error', 500);
+  }
+}
+
+// ── MIME PARSER ───────────────────────────────────────────────────────────────
+/**
+ * Minimal MIME parser — handles:
+ *   - multipart/alternative  (picks text/html then text/plain)
+ *   - multipart/mixed        (recurses into parts)
+ *   - text/html  (top-level)
+ *   - text/plain (top-level)
+ *
+ * We deliberately avoid external dependencies per the spec constraint.
+ */
+function parseMime(raw) {
+  const result = { subject: '', bodyHtml: '', bodyText: '' };
+
+  // Split headers / body
+  const splitAt = raw.indexOf('\r\n\r\n') !== -1
+    ? raw.indexOf('\r\n\r\n')
+    : raw.indexOf('\n\n');
+
+  const headerBlock = splitAt !== -1 ? raw.slice(0, splitAt)  : raw;
+  const bodyBlock   = splitAt !== -1 ? raw.slice(splitAt + (raw[splitAt + 2] === '\n' ? 2 : 4)) : '';
+
+  const headers   = parseHeaders(headerBlock);
+  result.subject  = decodeEncodedWord(headers['subject'] || '');
+  const ct        = headers['content-type'] || '';
+  const encoding  = (headers['content-transfer-encoding'] || '').toLowerCase();
+
+  if (ct.toLowerCase().includes('multipart/')) {
+    const boundary = getBoundary(ct);
+    if (boundary) {
+      const parts = splitMultipart(bodyBlock || raw, boundary);
+      for (const part of parts) {
+        const sub = parseMime(part);
+        if (!result.bodyHtml && sub.bodyHtml) result.bodyHtml = sub.bodyHtml;
+        if (!result.bodyText && sub.bodyText) result.bodyText = sub.bodyText;
+      }
+    }
+  } else if (ct.toLowerCase().includes('text/html')) {
+    result.bodyHtml = decodeBody(bodyBlock, encoding);
+  } else if (ct.toLowerCase().includes('text/plain')) {
+    result.bodyText = decodeBody(bodyBlock, encoding);
+  } else if (!ct || ct.toLowerCase().includes('text/')) {
+    // Unknown / no content-type — treat as plain text
+    result.bodyText = decodeBody(bodyBlock, encoding);
   }
 
+  return result;
+}
+
+function parseHeaders(headerBlock) {
+  const headers = {};
+  // Unfold (join continuation lines)
+  const unfolded = headerBlock.replace(/\r?\n[ \t]+/g, ' ');
+  for (const line of unfolded.split(/\r?\n/)) {
+    const colon = line.indexOf(':');
+    if (colon === -1) continue;
+    const key = line.slice(0, colon).trim().toLowerCase();
+    const val = line.slice(colon + 1).trim();
+    headers[key] = val;
+  }
   return headers;
 }
 
-function getBoundary(contentType) {
-  const m = contentType.match(/boundary=["']?([^"';\r\n\s]+)["']?/i);
-  return m ? m[1].trim() : null;
+function getBoundary(ct) {
+  const m = ct.match(/boundary\s*=\s*"?([^";,\s]+)"?/i);
+  return m ? m[1] : null;
+}
+
+function splitMultipart(body, boundary) {
+  const delim   = '--' + boundary;
+  const parts   = [];
+  const segments = body.split(delim);
+  for (const seg of segments) {
+    const trimmed = seg.trim();
+    if (!trimmed || trimmed === '--') continue;
+    // Remove trailing --
+    parts.push(trimmed.replace(/^--\s*$/, '').trim());
+  }
+  return parts;
+}
+
+function decodeBody(body, encoding) {
+  if (!body) return '';
+  if (encoding === 'base64') {
+    try {
+      return atob(body.replace(/\s/g, ''));
+    } catch { return body; }
+  }
+  if (encoding === 'quoted-printable') {
+    return decodeQP(body);
+  }
+  return body;
 }
 
 function decodeQP(str) {
   return str
-    .replace(/=\r?\n/g, '')
-    .replace(/=([0-9A-Fa-f]{2})/g, (_, h) => String.fromCharCode(parseInt(h, 16)));
+    .replace(/=\r?\n/g, '')                          // soft line breaks
+    .replace(/=([0-9A-Fa-f]{2})/g, (_, hex) =>
+      String.fromCharCode(parseInt(hex, 16)));
 }
 
-function decodeB64(str) {
-  try {
-    return atob(str.replace(/\s/g, ''));
-  } catch {
-    return str;
-  }
-}
-
-function decodeEncodedWords(str) {
-  if (!str) return '';
-
+// Decode RFC 2047 encoded-words: =?charset?encoding?text?=
+function decodeEncodedWord(str) {
   return str.replace(/=\?([^?]+)\?([BbQq])\?([^?]*)\?=/g, (_, charset, enc, text) => {
     try {
-      const decoded = enc.toUpperCase() === 'B'
-        ? decodeB64(text)
-        : decodeQP(text.replace(/_/g, ' '));
-
-      try {
-        return decodeURIComponent(escape(decoded));
-      } catch {
-        return decoded;
-      }
-    } catch {
-      return text;
-    }
-  });
-}
-
-function extractEmail(from) {
-  const m = from.match(/<([^>]+)>/);
-  return (m ? m[1] : from).trim();
-}
-
-function extractName(from) {
-  const m = from.match(/^([^<]+)</);
-
-  if (!m) return '';
-
-  return decodeEncodedWords(
-    m[1].trim().replace(/^["']|["']$/g, '')
-  );
-}
-
-function applyEncoding(body, encoding) {
-  const enc = (encoding || '').toLowerCase().trim();
-
-  if (enc === 'base64') return decodeB64(body);
-  if (enc === 'quoted-printable') return decodeQP(body);
-
-  return body;
-}
-
-function splitHeaderBody(raw) {
-  const i4 = raw.indexOf('\r\n\r\n');
-  const i2 = raw.indexOf('\n\n');
-
-  let idx = -1;
-  let skip = 2;
-
-  if (i4 !== -1 && (i2 === -1 || i4 <= i2)) {
-    idx = i4;
-    skip = 4;
-  } else if (i2 !== -1) {
-    idx = i2;
-    skip = 2;
-  }
-
-  if (idx === -1) {
-    return {
-      headerText: raw,
-      body: ''
-    };
-  }
-
-  return {
-    headerText: raw.slice(0, idx),
-    body: raw.slice(idx + skip)
-  };
-}
-
-function parseMultipart(body, boundary) {
-  const parts = [];
-  const delim = '--' + boundary;
-  const lines = body.split(/\r?\n/);
-
-  let currentPart = [];
-  let inPart = false;
-
-  for (const line of lines) {
-    if (line.startsWith(delim + '--')) {
-      if (inPart && currentPart.length) {
-        const { headerText, body: pb } = splitHeaderBody(currentPart.join('\n'));
-
-        if (headerText) {
-          parts.push({
-            headers: parseHeaders(headerText),
-            body: pb
-          });
-        }
-      }
-
-      break;
-    } else if (line.startsWith(delim)) {
-      if (inPart && currentPart.length) {
-        const { headerText, body: pb } = splitHeaderBody(currentPart.join('\n'));
-
-        if (headerText) {
-          parts.push({
-            headers: parseHeaders(headerText),
-            body: pb
-          });
-        }
-      }
-
-      currentPart = [];
-      inPart = true;
-    } else if (inPart) {
-      currentPart.push(line);
-    }
-  }
-
-  return parts;
-}
-
-function extractBodies(headers, body) {
-  let text = '';
-  let html = '';
-
-  const ct  = (headers['content-type'] || 'text/plain').toLowerCase();
-  const enc = headers['content-transfer-encoding'] || '';
-
-  if (ct.includes('multipart/')) {
-    const boundary = getBoundary(ct);
-
-    if (boundary) {
-      for (const part of parseMultipart(body, boundary)) {
-        const pct  = (part.headers['content-type'] || '').toLowerCase();
-        const penc = part.headers['content-transfer-encoding'] || '';
-
-        if (pct.includes('multipart/')) {
-          const { text: t, html: h } = extractBodies(part.headers, part.body);
-
-          if (!text && t) text = t;
-          if (!html && h) html = h;
-        } else if (pct.includes('text/html')) {
-          if (!html) html = applyEncoding(part.body, penc);
-        } else if (pct.includes('text/plain')) {
-          if (!text) text = applyEncoding(part.body, penc);
-        }
-      }
-    }
-  } else if (ct.includes('text/html')) {
-    html = applyEncoding(body, enc);
-  } else if (ct.includes('text/plain')) {
-    text = applyEncoding(body, enc);
-  }
-
-  return { text, html };
-}
-
-function scanParts(rawText) {
-  let html = '';
-  let text = '';
-
-  const chunks = rawText.split(/(?:\r?\n)(?=Content-Type:\s*text\/)/i);
-
-  for (const chunk of chunks) {
-    const ctMatch = chunk.match(/^Content-Type:\s*(text\/\w+)/i);
-
-    if (!ctMatch) continue;
-
-    const isHtml  = /text\/html/i.test(ctMatch[1]);
-    const isPlain = /text\/plain/i.test(ctMatch[1]);
-
-    if (!isHtml && !isPlain) continue;
-
-    const encMatch = chunk.match(/Content-Transfer-Encoding:\s*([^\r\n]+)/i);
-    const enc = encMatch ? encMatch[1].trim() : '';
-
-    const blankIdx = chunk.search(/\r?\n\r?\n/);
-
-    if (blankIdx === -1) continue;
-
-    let partBody = chunk.slice(blankIdx).replace(/^\r?\n\r?\n?/, '');
-    partBody = partBody.replace(/\r?\n--[^\r\n]*(--)?\s*$/, '').trim();
-
-    if (!partBody) continue;
-
-    const decoded = applyEncoding(partBody, enc);
-
-    if (isHtml && !html) html = decoded;
-    if (isPlain && !text) text = decoded;
-  }
-
-  return { html, text };
-}
-
-function parseRawEmail(rawText) {
-  const { headerText, body } = splitHeaderBody(rawText);
-  const headers = parseHeaders(headerText);
-
-  const fromRaw = headers['from'] || '';
-  const subject = decodeEncodedWords(headers['subject'] || '(Tanpa Judul)');
-
-  let { text, html } = extractBodies(headers, body);
-
-  if (!html || !text) {
-    const found = scanParts(rawText);
-
-    if (!html && found.html) html = found.html;
-    if (!text && found.text) text = found.text;
-  }
-
-  if (!html && !text) {
-    const ct = (headers['content-type'] || '').toLowerCase();
-
-    if (ct.includes('text/html')) {
-      html = body;
-    } else {
-      text = body;
-    }
-  }
-
-  return {
-    from: extractEmail(fromRaw),
-    fromName: extractName(fromRaw),
-    subject,
-    textBody: text,
-    htmlBody: html
-  };
-}
-
-// ═══════════════════════════════════════════════════════════
-// KV HELPER
-// ═══════════════════════════════════════════════════════════
-
-async function kvGetJson(env, key, fallback = null) {
-  const val = await env.MAIL_KV.get(key);
-
-  if (!val) return fallback;
-
-  try {
-    return JSON.parse(val);
-  } catch {
-    return fallback;
-  }
-}
-
-// ═══════════════════════════════════════════════════════════
-// EMAIL HANDLER
-// ═══════════════════════════════════════════════════════════
-
-async function handleEmail(message, env) {
-  try {
-    const raw    = await new Response(message.raw).text();
-    const parsed = parseRawEmail(raw);
-    const id     = crypto.randomUUID();
-    const to     = message.to.toLowerCase().trim();
-
-    const emailData = {
-      id,
-      from:     parsed.from     || message.from || '',
-      fromName: parsed.fromName || '',
-      to,
-      subject:  parsed.subject  || '(Tanpa Judul)',
-      textBody: parsed.textBody || '',
-      htmlBody: parsed.htmlBody || '',
-      date:     new Date().toISOString(),
-      seen:     false
-    };
-
-    const summaryData = {
-      id,
-      from:     emailData.from,
-      fromName: emailData.fromName,
-      subject:  emailData.subject,
-      date:     emailData.date,
-      seen:     false
-    };
-
-    // Simpan isi email lengkap.
-    await env.MAIL_KV.put(
-      `msg:${id}`,
-      JSON.stringify(emailData),
-      { expirationTtl: TTL }
-    );
-
-    // Simpan index inbox per alamat email.
-    // Ini pengganti KV.list(), jadi inbox bisa dibaca pakai KV.get().
-    const inboxKey = `inbox:${to}`;
-    const inbox = await kvGetJson(env, inboxKey, []);
-
-    inbox.unshift(summaryData);
-
-    // Batasi 50 email terbaru supaya ringan.
-    await env.MAIL_KV.put(
-      inboxKey,
-      JSON.stringify(inbox.slice(0, 50)),
-      { expirationTtl: TTL }
-    );
-
-    console.log(
-      `✉️ ${message.from} → ${to} | "${emailData.subject}" | html:${emailData.htmlBody.length} text:${emailData.textBody.length}`
-    );
-  } catch (err) {
-    console.error('Gagal menyimpan email:', err);
-    throw err;
-  }
-}
-
-// ═══════════════════════════════════════════════════════════
-// HTTP / API HANDLER
-// ═══════════════════════════════════════════════════════════
-
-const CORS_HEADERS = {
-  'Content-Type': 'application/json',
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Methods': 'GET, DELETE, OPTIONS',
-  'Access-Control-Allow-Headers': 'Content-Type'
-};
-
-function res(data, status = 200) {
-  return new Response(JSON.stringify(data), {
-    status,
-    headers: CORS_HEADERS
-  });
-}
-
-async function handleFetch(request, env) {
-  const url    = new URL(request.url);
-  const path   = url.pathname;
-  const method = request.method;
-
-  if (method === 'OPTIONS') {
-    return new Response(null, {
-      headers: CORS_HEADERS
-    });
-  }
-
-  // Health check sederhana.
-  if (path === '/' && method === 'GET') {
-    return res({
-      ok: true,
-      name: 'TempBox Worker',
-      message: 'Worker aktif'
-    });
-  }
-
-  // Ambil domain email.
-  if (path === '/api/domain' && method === 'GET') {
-    return res({
-      domain: env.MAIL_DOMAIN || 'yourdomain.com'
-    });
-  }
-
-  // Ambil daftar inbox.
-  // PENTING: Tidak pakai KV.list().
-  if (path === '/api/messages' && method === 'GET') {
-    const email = (url.searchParams.get('email') || '').toLowerCase().trim();
-
-    if (!email) return res([]);
-
-    const inbox = await kvGetJson(env, `inbox:${email}`, []);
-
-    return res(inbox);
-  }
-
-  // Buka detail email.
-  if (/^\/api\/messages\/[^/]+$/.test(path) && method === 'GET') {
-    const msgId = path.split('/')[3];
-    const email = (url.searchParams.get('email') || '').toLowerCase().trim();
-
-    const msgKey = `msg:${msgId}`;
-    const m = await kvGetJson(env, msgKey, null);
-
-    if (!m) {
-      return res({
-        error: 'Tidak ditemukan'
-      }, 404);
-    }
-
-    if (!m.seen) {
-      m.seen = true;
-
-      await env.MAIL_KV.put(
-        msgKey,
-        JSON.stringify(m),
-        { expirationTtl: TTL }
-      );
-
-      if (email) {
-        const inboxKey = `inbox:${email}`;
-        const inbox = await kvGetJson(env, inboxKey, []);
-
-        const updatedInbox = inbox.map(item =>
-          item.id === msgId
-            ? { ...item, seen: true }
-            : item
-        );
-
-        await env.MAIL_KV.put(
-          inboxKey,
-          JSON.stringify(updatedInbox),
-          { expirationTtl: TTL }
-        );
-      }
-    }
-
-    return res(m);
-  }
-
-  // Hapus satu email.
-  if (/^\/api\/messages\/[^/]+$/.test(path) && method === 'DELETE') {
-    const msgId = path.split('/')[3];
-    const email = (url.searchParams.get('email') || '').toLowerCase().trim();
-
-    await env.MAIL_KV.delete(`msg:${msgId}`);
-
-    if (email) {
-      const inboxKey = `inbox:${email}`;
-      const inbox = await kvGetJson(env, inboxKey, []);
-
-      const updatedInbox = inbox.filter(item => item.id !== msgId);
-
-      if (updatedInbox.length) {
-        await env.MAIL_KV.put(
-          inboxKey,
-          JSON.stringify(updatedInbox),
-          { expirationTtl: TTL }
-        );
+      let bytes;
+      if (enc.toUpperCase() === 'B') {
+        bytes = Uint8Array.from(atob(text), c => c.charCodeAt(0));
       } else {
-        await env.MAIL_KV.delete(inboxKey);
+        const decoded = text.replace(/_/g, ' ').replace(/=([0-9A-Fa-f]{2})/g,
+          (__, hex) => String.fromCharCode(parseInt(hex, 16)));
+        bytes = new TextEncoder().encode(decoded);
       }
-    }
-
-    return res({
-      success: true
-    });
-  }
-
-  // Hapus semua email di inbox tertentu.
-  if (path === '/api/inbox' && method === 'DELETE') {
-    const email = (url.searchParams.get('email') || '').toLowerCase().trim();
-
-    if (!email) {
-      return res({
-        error: 'Email diperlukan'
-      }, 400);
-    }
-
-    const inboxKey = `inbox:${email}`;
-    const inbox = await kvGetJson(env, inboxKey, []);
-
-    await Promise.all(
-      inbox.map(item => env.MAIL_KV.delete(`msg:${item.id}`))
-    );
-
-    await env.MAIL_KV.delete(inboxKey);
-
-    return res({
-      success: true,
-      deleted: inbox.length
-    });
-  }
-
-  return res({
-    error: 'Endpoint tidak ditemukan'
-  }, 404);
+      return new TextDecoder(charset).decode(bytes);
+    } catch { return text; }
+  });
 }
 
-// ═══════════════════════════════════════════════════════════
-// EXPORT
-// ═══════════════════════════════════════════════════════════
+// ── UTIL ──────────────────────────────────────────────────────────────────────
+async function streamToArrayBuffer(stream) {
+  const reader = stream.getReader();
+  const chunks = [];
+  let totalLen = 0;
 
-export default {
-  async email(message, env, ctx) {
-    try {
-      await handleEmail(message, env);
-    } catch (err) {
-      console.error('EMAIL WORKER ERROR:', err);
-      throw err;
-    }
-  },
-
-  async fetch(request, env, ctx) {
-    try {
-      return await handleFetch(request, env);
-    } catch (err) {
-      console.error('WORKER FETCH ERROR:', err);
-
-      return res({
-        error: true,
-        message: err?.message || String(err),
-        stack: err?.stack || null
-      }, 500);
-    }
+  while (true) {
+    const { done, value } = await reader.read();
+    if (done) break;
+    chunks.push(value);
+    totalLen += value.length;
   }
-};
+
+  const result = new Uint8Array(totalLen);
+  let offset = 0;
+  for (const chunk of chunks) {
+    result.set(chunk, offset);
+    offset += chunk.length;
+  }
+  return result.buffer;
+}
+
