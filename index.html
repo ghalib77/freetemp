@@ -1,461 +1,825 @@
 <!DOCTYPE html>
-<html lang="id">
+<html lang="en">
 <head>
-<meta charset="UTF-8"/>
-<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
-<title>TempBox</title>
-<link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=DM+Sans:wght@300;400;500;700&display=swap" rel="stylesheet"/>
-<style>
-:root{--bg:#0d0f14;--s1:#161920;--s2:#1e222e;--bd:#2a2f3e;--ac:#5b8aff;--ac2:#a78bfa;--gn:#34d399;--rd:#f87171;--yw:#fbbf24;--tx:#e2e8f0;--mu:#64748b;--mono:'Space Mono',monospace;--sans:'DM Sans',sans-serif}
-*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
-body{font-family:var(--sans);background:var(--bg);color:var(--tx);min-height:100vh;overflow-x:hidden}
-body::before{content:'';position:fixed;inset:0;background-image:linear-gradient(rgba(91,138,255,.03) 1px,transparent 1px),linear-gradient(90deg,rgba(91,138,255,.03) 1px,transparent 1px);background-size:40px 40px;pointer-events:none;z-index:0}
-.orb{position:fixed;border-radius:50%;pointer-events:none;z-index:0}
-.orb1{top:-200px;right:-200px;width:600px;height:600px;background:radial-gradient(circle,rgba(91,138,255,.08) 0%,transparent 70%)}
-.orb2{bottom:-200px;left:-200px;width:500px;height:500px;background:radial-gradient(circle,rgba(167,139,250,.06) 0%,transparent 70%)}
-.wrap{max-width:960px;margin:0 auto;padding:0 20px;position:relative;z-index:1}
-header{padding:20px 0 20px;border-bottom:1px solid var(--bd);position:relative;z-index:1}
-.hdr{display:flex;align-items:center;justify-content:space-between}
-.logo{display:flex;align-items:center;gap:10px}
-.logo-ic{width:38px;height:38px;background:linear-gradient(135deg,var(--ac),var(--ac2));border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:18px}
-.logo-name{font-family:var(--mono);font-size:19px;font-weight:700;background:linear-gradient(135deg,#fff 40%,var(--ac2));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
-.logo-sub{font-size:11px;color:var(--mu);letter-spacing:.4px;margin-top:1px}
-.status{display:flex;align-items:center;gap:7px;font-size:12px;color:var(--mu);font-family:var(--mono)}
-.dot{width:8px;height:8px;border-radius:50%;animation:blink 2s infinite}
-@keyframes blink{0%,100%{opacity:1}50%{opacity:.45}}
-main{padding:32px 0 60px}
-.card{background:var(--s1);border:1px solid var(--bd);border-radius:16px;padding:26px;margin-bottom:22px;position:relative;overflow:hidden}
-.card::before{content:'';position:absolute;top:0;left:0;right:0;height:1px;background:linear-gradient(90deg,transparent,var(--ac),transparent);opacity:.5}
-.lbl{font-size:11px;font-weight:600;letter-spacing:1.8px;text-transform:uppercase;color:var(--mu);margin-bottom:13px}
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>FreeTemp — Disposable Email</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
-/* Email composer */
-.email-row{display:flex;align-items:center;gap:9px;flex-wrap:wrap}
-.email-builder{display:flex;flex:1;min-width:220px;align-items:center;background:var(--s2);border:1px solid var(--bd);border-radius:10px;overflow:hidden;transition:border-color .2s}
-.email-builder:focus-within{border-color:var(--ac)}
-.email-user{flex:1;background:none;border:none;outline:none;padding:13px 15px;font-family:var(--mono);font-size:14px;color:var(--tx)}
-.email-user::placeholder{color:var(--mu)}
-.email-at{padding:13px 4px;font-family:var(--mono);font-size:14px;color:var(--mu)}
-.email-domain{padding:13px 15px;font-family:var(--mono);font-size:14px;color:var(--ac2);font-weight:700;white-space:nowrap}
+    :root {
+      --bg:        #0a0a0a;
+      --surface:   #111111;
+      --surface2:  #161616;
+      --border:    #222222;
+      --border2:   #2a2a2a;
+      --fg:        #f5f5f5;
+      --fg2:       #a0a0a0;
+      --fg3:       #6b6b6b;
+      --accent:    #e0e0e0;
+      --green:     #4ade80;
+      --red:       #f87171;
+      --mono:      'JetBrains Mono', monospace;
+      --sans:      'DM Sans', sans-serif;
+    }
 
-.btn{display:inline-flex;align-items:center;gap:6px;padding:11px 16px;border-radius:9px;font-size:13px;font-weight:600;font-family:var(--sans);cursor:pointer;border:none;transition:all .17s;white-space:nowrap}
-.btn:active{transform:scale(.97)}
-.btn-ac{background:var(--ac);color:#fff}.btn-ac:hover{background:#7ba3ff;box-shadow:0 0 18px rgba(91,138,255,.3)}
-.btn-gh{background:var(--s2);color:var(--tx);border:1px solid var(--bd)}.btn-gh:hover{border-color:var(--ac);color:var(--ac)}
-.btn-ok{background:rgba(52,211,153,.12);color:var(--gn);border:1px solid rgba(52,211,153,.25)}
-.btn-rd{background:rgba(248,113,113,.1);color:var(--rd);border:1px solid rgba(248,113,113,.2)}.btn-rd:hover{background:rgba(248,113,113,.18)}
+    body {
+      font-family: var(--sans);
+      background-color: var(--bg);
+      background-image: radial-gradient(circle, #2a2a2a 1px, transparent 1px);
+      background-size: 24px 24px;
+      color: var(--fg);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
 
-.refresh-info{margin-top:14px;display:flex;align-items:center;gap:8px;font-size:12px;color:var(--mu)}
-.refresh-pulse{width:6px;height:6px;border-radius:50%;background:var(--gn);box-shadow:0 0 6px var(--gn);animation:blink 2s infinite;flex-shrink:0}
-.refresh-info span{opacity:.7}
-.prog-t{flex:1;height:3px;background:var(--bd);border-radius:3px;overflow:hidden}
-.prog-f{height:100%;background:linear-gradient(90deg,var(--ac),var(--ac2));border-radius:3px;transition:width 1s linear}
+    /* ── LAYOUT ── */
+    .page {
+      width: 100%;
+      max-width: 720px;
+      padding: 0 20px 80px;
+    }
 
-/* Setup banner */
-.setup-banner{background:rgba(251,191,36,.08);border:1px solid rgba(251,191,36,.25);border-radius:12px;padding:16px 20px;margin-bottom:22px;display:none}
-.setup-banner.show{display:block}
-.setup-title{font-size:13px;font-weight:700;color:var(--yw);margin-bottom:6px}
-.setup-text{font-size:12px;color:var(--mu);line-height:1.65}
-.setup-text code{font-family:var(--mono);background:var(--s2);padding:1px 6px;border-radius:4px;font-size:11px;color:var(--ac2)}
+    /* ── HEADER ── */
+    header {
+      padding: 48px 0 36px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
 
-.inbox-hdr{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px}
-.inbox-ttl{display:flex;align-items:center;gap:9px;}
-.inbox-shdr{display:flex;align-items:center;gap:9px;}
-.badge {display:flex;align-items:center;justify-content:center;padding:2px 8px;border-radius:4px;font-size: 12px;font-weight:700;background: var(--s2);color: var(--mu);}
-.inbox-actions{display:flex;gap:8px}
-.rbtn{display:flex;align-items:center;gap:6px;font-size:12px;font-weight:600;color:var(--mu);cursor:pointer;background:none;border:1px solid var(--bd);border-radius:8px;padding:7px 11px;font-family:var(--sans);transition:all .17s}
-.rbtn:hover{color:var(--ac);border-color:var(--ac)}
-.rbtn.spin svg{animation:rot 1s linear infinite}
-@keyframes rot{to{transform:rotate(360deg)}}
+    .logo {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
 
-.emails{display:flex;flex-direction:column;gap:9px}
-.eitem{background:var(--s1);border:1px solid var(--bd);border-radius:12px;padding:17px 19px;cursor:pointer;transition:all .17s;position:relative;overflow:hidden;display:flex;align-items:center;gap:14px}
-.eitem:hover{border-color:var(--ac);background:var(--s2);transform:translateY(-1px);box-shadow:0 4px 18px rgba(0,0,0,.3)}
-.eitem.unread::before{content:'';position:absolute;left:0;top:0;bottom:0;width:3px;background:var(--ac);border-radius:3px 0 0 3px}
-.eitem-body{flex:1;min-width:0;}
-.erow{display:flex;align-items:center;justify-content:space-between;margin-bottom:4px;gap:10px}
-.efrom{font-weight:600;font-size:13px;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.etime{font-size:11px;color:var(--mu);font-family:var(--mono);white-space:nowrap}
-.esubj{font-size:13px;font-weight:500;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--tx)}
-.edel{padding:6px 8px;border-radius:7px;background:rgba(248,113,113,.1);border:none;cursor:pointer;color:var(--rd);font-size:12px;transition:opacity .15s;flex-shrink:0}
+    .logo-icon {
+      width: 32px;
+      height: 32px;
+      border: 1.5px solid var(--border2);
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: var(--surface);
+    }
 
-.empty{text-align:center;padding:55px 20px;background:var(--s1);border:1px dashed var(--bd);border-radius:16px}
-.empty-ic{font-size:44px;margin-bottom:14px;opacity:.45;display:block}
-.empty-t{font-size:15px;font-weight:600;color:var(--mu);margin-bottom:6px}
-.empty-s{font-size:13px;color:var(--mu);opacity:.7;line-height:1.65}
+    .logo-icon svg { width: 16px; height: 16px; color: var(--fg2); }
 
-/* Modal */
-.overlay{position:fixed;inset:0;background:rgba(0,0,0,.78);backdrop-filter:blur(7px);z-index:100;display:none;align-items:center;justify-content:center;padding:18px}
-.overlay.on{display:flex;animation:fi .2s ease}
-@keyframes fi{from{opacity:0}to{opacity:1}}
-.modal{background:var(--s1);border:1px solid var(--bd);border-radius:20px;width:100%;max-width:700px;max-height:88vh;overflow-y:auto;animation:su .22s ease}
-@keyframes su{from{transform:translateY(28px);opacity:0}to{transform:translateY(0);opacity:1}}
-.mtop{position:sticky;top:0;background:var(--s1);border-bottom:1px solid var(--bd);padding:18px 22px;display:flex;align-items:flex-start;justify-content:space-between;gap:14px;z-index:1;border-radius:20px 20px 0 0}
-.mmeta{flex:1;min-width:0}
-.msubj{font-size:17px;font-weight:700;margin-bottom:7px}
-.mfrom{font-size:12px;color:var(--mu);margin-bottom:3px}
-.mtime{font-size:11px;color:var(--mu);font-family:var(--mono)}
-.mtop-actions{display:flex;gap:8px;align-items:flex-start}
-.mclose{width:32px;height:32px;border-radius:8px;background:var(--s2);border:1px solid var(--bd);cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:16px;color:var(--mu);transition:all .15s}
-.mclose:hover{background:var(--rd);color:#fff;border-color:var(--rd)}
-.mbody{padding:22px}
-.mtext{font-family:var(--mono);font-size:12px;line-height:1.75;color:var(--tx);white-space:pre-wrap;word-break:break-word;background:var(--s2);border:1px solid var(--bd);border-radius:10px;padding:15px}
-.mhtml-wrap{border-radius:10px;overflow:hidden;border:1px solid var(--bd);background:#fff}
-.mhtml-wrap iframe{width:100%;min-height:300px;border:none;display:block}
+    .logo-text {
+      font-family: var(--mono);
+      font-size: 15px;
+      font-weight: 600;
+      letter-spacing: -0.02em;
+      color: var(--fg);
+    }
 
-/* Config panel */
-.cfg-card{background:rgba(91,138,255,.05);border:1px solid rgba(91,138,255,.2);border-radius:14px;padding:22px;margin-bottom:22px}
-.cfg-lbl{font-size:11px;font-weight:600;letter-spacing:1.8px;text-transform:uppercase;color:var(--ac);margin-bottom:12px}
-.cfg-row{display:flex;gap:9px;align-items:center;flex-wrap:wrap}
-.cfg-input{flex:1;min-width:200px;background:var(--s2);border:1px solid var(--bd);border-radius:9px;padding:11px 14px;font-family:var(--mono);font-size:13px;color:var(--tx);outline:none;transition:border-color .2s}
-.cfg-input:focus{border-color:var(--ac)}
-.cfg-input::placeholder{color:var(--mu)}
-.cfg-note{font-size:12px;color:var(--mu);margin-top:10px;line-height:1.55}
-.cfg-note code{font-family:var(--mono);background:var(--s2);padding:1px 6px;border-radius:4px;font-size:11px;color:var(--ac2)}
+    .logo-text span { color: var(--fg3); }
 
-.toast{position:fixed;bottom:22px;right:22px;background:var(--s2);border:1px solid var(--bd);border-radius:12px;padding:13px 18px;font-size:13px;font-weight:500;color:var(--tx);display:flex;align-items:center;gap:9px;z-index:200;box-shadow:0 8px 28px rgba(0,0,0,.4);transform:translateY(80px);opacity:0;transition:all .3s cubic-bezier(.34,1.56,.64,1)}
-.toast.on{transform:translateY(0);opacity:1}
-footer{border-top:1px solid var(--bd);padding:20px 0;text-align:center;font-size:12px;color:var(--mu);position:relative;z-index:1}
-::-webkit-scrollbar{width:5px}::-webkit-scrollbar-track{background:var(--bg)}::-webkit-scrollbar-thumb{background:var(--bd);border-radius:3px}
-@media(max-width:580px){.btn{padding:10px 12px;font-size:12px}.email-row{gap:7px}}
-</style>
+    .header-tag {
+      font-family: var(--mono);
+      font-size: 11px;
+      color: var(--fg3);
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      border: 1px solid var(--border);
+      padding: 4px 10px;
+      border-radius: 4px;
+    }
+
+    /* ── EMAIL CARD ── */
+    .email-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 24px;
+      margin-bottom: 16px;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .email-card::before {
+      content: '';
+      position: absolute;
+      top: 0; left: 0; right: 0;
+      height: 1px;
+      background: linear-gradient(90deg, transparent, var(--border2) 30%, var(--border2) 70%, transparent);
+    }
+
+    .email-label {
+      font-size: 11px;
+      font-weight: 500;
+      color: var(--fg3);
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      margin-bottom: 12px;
+    }
+
+    .email-row {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .email-address {
+      font-family: var(--mono);
+      font-size: 15px;
+      font-weight: 500;
+      color: var(--fg);
+      flex: 1;
+      min-width: 0;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      letter-spacing: -0.01em;
+    }
+
+    .email-address .domain { color: var(--fg3); }
+
+    .btn {
+      font-family: var(--sans);
+      font-size: 13px;
+      font-weight: 500;
+      border: 1px solid var(--border2);
+      background: var(--surface2);
+      color: var(--fg2);
+      border-radius: 8px;
+      padding: 8px 14px;
+      cursor: pointer;
+      transition: all 0.15s ease;
+      white-space: nowrap;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      line-height: 1;
+    }
+
+    .btn:hover {
+      border-color: var(--fg3);
+      color: var(--fg);
+      background: #1a1a1a;
+    }
+
+    .btn:active { transform: scale(0.97); }
+
+    .btn.copied {
+      border-color: var(--green);
+      color: var(--green);
+    }
+
+    .btn-danger:hover {
+      border-color: var(--red);
+      color: var(--red);
+    }
+
+    .card-actions {
+      display: flex;
+      gap: 8px;
+      margin-top: 16px;
+      padding-top: 16px;
+      border-top: 1px solid var(--border);
+    }
+
+    /* ── INBOX SECTION ── */
+    .inbox-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 10px;
+    }
+
+    .inbox-title {
+      font-size: 13px;
+      font-weight: 500;
+      color: var(--fg2);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .inbox-count {
+      font-family: var(--mono);
+      font-size: 11px;
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      padding: 2px 7px;
+      color: var(--fg3);
+    }
+
+    .countdown {
+      font-family: var(--mono);
+      font-size: 12px;
+      color: var(--fg3);
+      text-align: right;
+      margin-bottom: 10px;
+      height: 18px;
+    }
+
+    /* ── INBOX LIST ── */
+    .inbox-list {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      overflow: hidden;
+    }
+
+    .inbox-item {
+      padding: 16px 20px;
+      border-bottom: 1px solid var(--border);
+      cursor: pointer;
+      transition: background 0.15s ease;
+      display: grid;
+      grid-template-columns: 1fr auto;
+      grid-template-rows: auto auto;
+      gap: 4px 12px;
+    }
+
+    .inbox-item:last-child { border-bottom: none; }
+
+    .inbox-item:hover { background: rgba(255,255,255,0.04); }
+
+    .inbox-item:active { background: rgba(255,255,255,0.06); }
+
+    .item-from {
+      font-family: var(--mono);
+      font-size: 12px;
+      color: var(--fg2);
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      grid-column: 1;
+      grid-row: 1;
+    }
+
+    .item-time {
+      font-size: 11px;
+      color: var(--fg3);
+      grid-column: 2;
+      grid-row: 1;
+      white-space: nowrap;
+    }
+
+    .item-subject {
+      font-size: 13px;
+      font-weight: 500;
+      color: var(--fg);
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      grid-column: 1 / 3;
+      grid-row: 2;
+    }
+
+    /* ── EMPTY STATE ── */
+    .empty-state {
+      padding: 60px 20px;
+      text-align: center;
+    }
+
+    .empty-icon {
+      width: 48px;
+      height: 48px;
+      margin: 0 auto 16px;
+      border: 1px solid var(--border2);
+      border-radius: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .empty-icon svg { color: var(--fg3); }
+
+    .empty-title {
+      font-size: 14px;
+      font-weight: 500;
+      color: var(--fg2);
+      margin-bottom: 6px;
+    }
+
+    .empty-sub {
+      font-size: 12px;
+      color: var(--fg3);
+      line-height: 1.6;
+    }
+
+    /* ── LOADING SKELETON ── */
+    .skeleton-item {
+      padding: 16px 20px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .skeleton-item:last-child { border-bottom: none; }
+
+    .skel {
+      background: linear-gradient(90deg, var(--surface2) 25%, #1e1e1e 50%, var(--surface2) 75%);
+      background-size: 200% 100%;
+      border-radius: 4px;
+      animation: shimmer 1.5s infinite;
+    }
+
+    @keyframes shimmer {
+      0%   { background-position: 200% 0; }
+      100% { background-position: -200% 0; }
+    }
+
+    .skel-sm  { height: 10px; width: 40%; margin-bottom: 8px; }
+    .skel-lg  { height: 13px; width: 75%; }
+
+    /* ── TOAST ── */
+    #toast {
+      position: fixed;
+      bottom: 28px;
+      left: 50%;
+      transform: translateX(-50%) translateY(80px);
+      background: var(--surface);
+      border: 1px solid var(--border2);
+      border-radius: 8px;
+      padding: 10px 18px;
+      font-size: 13px;
+      color: var(--fg2);
+      transition: transform 0.25s ease;
+      z-index: 999;
+      pointer-events: none;
+      white-space: nowrap;
+    }
+
+    #toast.show { transform: translateX(-50%) translateY(0); }
+    #toast.error { border-color: var(--red); color: var(--red); }
+
+    /* ── MODAL ── */
+    .modal-backdrop {
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.75);
+      backdrop-filter: blur(4px);
+      -webkit-backdrop-filter: blur(4px);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 100;
+      padding: 20px;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.2s ease;
+    }
+
+    .modal-backdrop.open {
+      opacity: 1;
+      pointer-events: all;
+    }
+
+    .modal {
+      background: var(--surface);
+      border: 1px solid var(--border2);
+      border-radius: 12px;
+      width: 100%;
+      max-width: 680px;
+      max-height: 85vh;
+      display: flex;
+      flex-direction: column;
+      transform: translateY(12px) scale(0.98);
+      transition: transform 0.2s ease;
+      overflow: hidden;
+    }
+
+    .modal-backdrop.open .modal {
+      transform: translateY(0) scale(1);
+    }
+
+    .modal-head {
+      padding: 20px 24px 16px;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 12px;
+      flex-shrink: 0;
+    }
+
+    .modal-subject {
+      font-size: 15px;
+      font-weight: 600;
+      color: var(--fg);
+      line-height: 1.4;
+    }
+
+    .modal-close {
+      width: 30px;
+      height: 30px;
+      border-radius: 6px;
+      border: 1px solid var(--border);
+      background: transparent;
+      color: var(--fg3);
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.15s;
+      flex-shrink: 0;
+    }
+
+    .modal-close:hover { border-color: var(--fg3); color: var(--fg); }
+
+    .modal-meta {
+      padding: 14px 24px;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      flex-shrink: 0;
+    }
+
+    .meta-row {
+      display: flex;
+      gap: 12px;
+      font-size: 12px;
+    }
+
+    .meta-key {
+      font-family: var(--mono);
+      color: var(--fg3);
+      min-width: 48px;
+      flex-shrink: 0;
+    }
+
+    .meta-val {
+      color: var(--fg2);
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .modal-body {
+      flex: 1;
+      overflow: hidden;
+    }
+
+    .modal-body iframe {
+      width: 100%;
+      height: 100%;
+      min-height: 340px;
+      border: none;
+      background: #fff;
+    }
+
+    /* ── SCROLLBAR ── */
+    ::-webkit-scrollbar { width: 6px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 3px; }
+
+    /* ── RESPONSIVE ── */
+    @media (max-width: 480px) {
+      header { padding: 32px 0 24px; }
+      .email-address { font-size: 13px; }
+      .modal { max-height: 92vh; }
+    }
+  </style>
 </head>
 <body>
-<div class="orb orb1"></div><div class="orb orb2"></div>
+<div class="page">
 
-<header>
-  <div class="wrap">
-    <div class="hdr">
-      <div class="logo">
-        <div class="logo-ic">📬</div>
-        <div>
-          <div class="logo-name">TempBox</div>
-          <div class="logo-sub">Custom Domain · Anonim · Gratis</div>
-        </div>
+  <!-- HEADER -->
+  <header>
+    <div class="logo">
+      <div class="logo-icon">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+          <path d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/>
+        </svg>
       </div>
-      <div class="status">
-        <span class="dot" id="dot" style="background:var(--yw);box-shadow:0 0 8px var(--yw)"></span>
-        <span id="stxt">Memulai...</span>
+      <span class="logo-text">Free<span>Temp</span></span>
+    </div>
+    <div class="header-tag">disposable inbox</div>
+  </header>
+
+  <!-- EMAIL CARD -->
+  <div class="email-card">
+    <div class="email-label">Your temporary address</div>
+    <div class="email-row">
+      <div class="email-address" id="emailDisplay">
+        <span id="emailUser">—</span><span class="domain" id="emailDomain"></span>
       </div>
+      <button class="btn" id="copyBtn" onclick="copyEmail()">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/>
+        </svg>
+        Copy
+      </button>
+    </div>
+    <div class="card-actions">
+      <button class="btn" id="refreshBtn" onclick="manualRefresh()">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 11-2.12-9.36L23 10"/>
+        </svg>
+        Refresh
+      </button>
+      <button class="btn btn-danger" onclick="regenerateEmail()">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/>
+        </svg>
+        New Address
+      </button>
     </div>
   </div>
-</header>
 
-<main>
-  <div class="wrap">
-    <!-- Email Card -->
-    <div class="card">
-      <div class="lbl">📧 Buat Alamat Email</div>
-      <div class="email-row">
-        <div class="email-builder">
-          <input class="email-user" id="userIn" placeholder="namaanda" maxlength="40"
-            onkeydown="if(event.key==='Enter')useEmail()"/>
-          <span class="email-at">@</span>
-          <span class="email-domain" id="domainDisp">domain.com</span>
-        </div>
-        <!-- FIX 2: Tombol "Gunakan" ditambahkan -->
-        <button class="btn btn-ac" onclick="useEmail()">
-          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
-          Gunakan
-        </button>
-        <button class="btn btn-gh" onclick="randomEmail()">
-          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0114.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0020.49 15"/></svg>
-          Acak
-        </button>
-        <button class="btn btn-gh" id="copyBtn" onclick="doCopy()">
-          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>
-          Salin
-        </button>
-      </div>
-      <div class="refresh-info">
-        <div class="refresh-pulse" id="refreshPulse"></div>
-        <span>Auto-refresh aktif · refresh dalam <span id="lastUpdate">0</span></span>
-      </div>
+  <!-- INBOX -->
+  <div class="inbox-header">
+    <div class="inbox-title">
+      Inbox
+      <span class="inbox-count" id="inboxCount">0</span>
     </div>
-
-    <!-- Inbox -->
-    <div class="inbox-hdr">
-      <div class="inbox-ttl">
-        <div class="inbox-shdr">
-          <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 12 16 12 14 15 10 15 8 12 2 12"/><path d="M5.45 5.11L2 12v6a2 2 0 002 2h16a2 2 0 002-2v-6l-3.45-6.89A2 2 0 0016.76 4H7.24a2 2 0 00-1.79 1.11z"/></svg>
-          <span>Inbox</span>
-        </div>
-        <span class="badge" id="badge">0</span>
-      </div>
-      <div class="inbox-actions">
-        <button class="rbtn" id="rbtn" onclick="loadMsgs()">
-          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0114.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0020.49 15"/></svg>
-          Refresh
-        </button>
-        <button class="rbtn" onclick="clearAll()" style="color:var(--rd)">
-          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/></svg>
-          Hapus Semua
-        </button>
-      </div>
-    </div>
-    <div id="list"><div class="empty"><span class="empty-ic">📭</span><div class="empty-t">Inbox kosong</div><div class="empty-s">Masukkan nama email lalu klik <b>Gunakan</b><br>atau klik <b>Acak</b> untuk nama otomatis</div></div></div>
   </div>
-</main>
+  <div class="countdown" id="countdown">Auto-refresh in 5s</div>
 
-<!-- Modal -->
-<div class="overlay" id="ov" onclick="if(event.target===this)closeM()">
-  <div class="modal">
-    <div class="mtop">
-      <div class="mmeta">
-        <div class="msubj" id="msubj">—</div>
-        <div class="mfrom" id="mfrom">Dari: —</div>
-        <div class="mtime" id="mtime">—</div>
-      </div>
-      <div class="mtop-actions">
-        <button class="mclose btn-rd" id="mdelBtn" onclick="delOpenMsg()" title="Hapus email ini" style="font-size:13px;width:auto;padding:0 10px;gap:5px">
-          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/></svg>Hapus
-        </button>
-        <button class="mclose" onclick="closeM()">✕</button>
-      </div>
+  <div class="inbox-list" id="inboxList">
+    <!-- populated by JS -->
+  </div>
+
+</div>
+
+<!-- MODAL -->
+<div class="modal-backdrop" id="modalBackdrop" onclick="handleBackdropClick(event)">
+  <div class="modal" id="modal">
+    <div class="modal-head">
+      <div class="modal-subject" id="modalSubject">—</div>
+      <button class="modal-close" onclick="closeModal()">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+        </svg>
+      </button>
     </div>
-    <div class="mbody" id="mbody"></div>
+    <div class="modal-meta">
+      <div class="meta-row"><span class="meta-key">From</span><span class="meta-val" id="modalFrom">—</span></div>
+      <div class="meta-row"><span class="meta-key">To</span><span class="meta-val" id="modalTo">—</span></div>
+      <div class="meta-row"><span class="meta-key">Date</span><span class="meta-val" id="modalDate">—</span></div>
+    </div>
+    <div class="modal-body">
+      <iframe id="modalIframe" sandbox="allow-same-origin" title="Email body"></iframe>
+    </div>
   </div>
 </div>
 
-<div class="toast" id="toast"><span id="tic"></span><span id="tmsg"></span></div>
+<!-- TOAST -->
+<div id="toast"></div>
 
 <script>
-// ── CONFIG ─────────────────────────────────────────────────────────────────
-const LS_API  = 'tb_api_url';
-const LS_USER = 'tb_last_user';
+  // ── CONFIG ──────────────────────────────────────────────────────────────────
+  const DOMAIN      = 'mediasaya.web.id';
+  const API_BASE    = `https://freetemp-worker.${DOMAIN}`;   // adjust after deploy
+  const POLL_MS     = 5000;
+  const ADJECTIVES  = ['quick','dark','swift','bright','cold','sharp','calm','bold','slow','wild','tiny','vast','soft','deep','loud'];
+  const NOUNS       = ['fox','owl','ray','arc','sky','dot','fin','hex','jet','kex','pix','row','sox','tag','vex'];
 
-let API_URL = 'https://temporary-mail.muhamadghalib7.workers.dev';
-let S = { user:'', domain:'', msgs:[], cd:5, timer:null, openId:null };
+  // ── STATE ───────────────────────────────────────────────────────────────────
+  let currentEmail  = '';
+  let emails        = [];
+  let countdown     = POLL_MS / 1000;
+  let countdownTimer = null;
+  let pollTimer      = null;
+  let tabActive      = !document.hidden;
 
-// ── INIT ───────────────────────────────────────────────────────────────────
-async function init() {
-  await loadDomain();
-  const lastUser = localStorage.getItem(LS_USER);
-  if (lastUser) {
-    document.getElementById('userIn').value = lastUser;
-    await useEmail(true);
+  // ── INIT ────────────────────────────────────────────────────────────────────
+  function init() {
+    currentEmail = localStorage.getItem('freetemp_email') || generateEmail();
+    renderEmailAddress();
+    fetchInbox();
+    startCountdown();
+
+    document.addEventListener('visibilitychange', () => {
+      tabActive = !document.hidden;
+      if (tabActive) {
+        fetchInbox();
+        startCountdown();
+      } else {
+        stopCountdown();
+      }
+    });
+
+    document.addEventListener('keydown', e => {
+      if (e.key === 'Escape') closeModal();
+    });
   }
-}
 
-async function loadDomain() {
-  try {
-    const r = await fetch(`${API_URL}/api/domain`);
-    const d = await r.json();
-    S.domain = d.domain || 'domain.com';
-    document.getElementById('domainDisp').textContent = S.domain;
-    setStatus('ok');
-  } catch(e) {
-    setStatus('err');
-    toast('❌','Tidak bisa terhubung ke Worker. Cek URL-nya.');
+  // ── EMAIL GENERATION ────────────────────────────────────────────────────────
+  function generateEmail() {
+    const adj  = ADJECTIVES[Math.floor(Math.random() * ADJECTIVES.length)];
+    const noun = NOUNS[Math.floor(Math.random() * NOUNS.length)];
+    const num  = String(Math.floor(Math.random() * 9000) + 1000);
+    const addr = `${adj}${noun}${num}@${DOMAIN}`;
+    localStorage.setItem('freetemp_email', addr);
+    return addr;
   }
-}
 
-// ── EMAIL ACTIONS ──────────────────────────────────────────────────────────
-async function useEmail(silent = false) {
-  if (!API_URL) { toast('⚠️','Simpan URL Worker dulu'); return; }
-  const user = document.getElementById('userIn').value.trim().toLowerCase();
-  if (!user) { toast('⚠️','Masukkan nama email'); return; }
-  if (!/^[a-z0-9._+\-]+$/.test(user)) { toast('⚠️','Hanya huruf, angka, titik, atau strip'); return; }
+  function renderEmailAddress() {
+    const [user, domain] = currentEmail.split('@');
+    document.getElementById('emailUser').textContent   = user;
+    document.getElementById('emailDomain').textContent = '@' + domain;
+  }
 
-  S.user = user;
-  localStorage.setItem(LS_USER, user);
-  
-  if (!silent) toast('📬',`Inbox ${user}@${S.domain} aktif!`);
-  await loadMsgs();
-}
+  function regenerateEmail() {
+    if (!confirm('Generate a new address? Your current inbox will be cleared.')) return;
+    currentEmail = generateEmail();
+    emails = [];
+    renderEmailAddress();
+    renderInbox();
+    fetchInbox();
+    resetCountdown();
+  }
 
-function randomEmail() {
-  const chars = 'abcdefghijklmnopqrstuvwxyz0123456789';
-  const name = Array.from({length:8}, ()=>chars[Math.floor(Math.random()*chars.length)]).join('');
-  document.getElementById('userIn').value = name;
-  useEmail();
-}
-
-function doCopy() {
-  if (!S.user) { toast('⚠️','Pilih email dulu'); return; }
-  const email = `${S.user}@${S.domain}`;
-  navigator.clipboard.writeText(email).then(() => {
-    const b = document.getElementById('copyBtn');
-    b.innerHTML = `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>Tersalin!`;
-    b.classList.add('btn-ok'); b.classList.remove('btn-gh');
-    toast('📋',`${email} disalin!`);
-    setTimeout(()=>{
-      b.innerHTML=`<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>Salin`;
-      b.classList.remove('btn-ok'); b.classList.add('btn-gh');
-    }, 2000);
-  });
-}
-
-// ── MESSAGES ───────────────────────────────────────────────────────────────
-let isLoading = false;
-
-async function loadMsgs(resetTimer = true) {
-  if (!S.user || !API_URL || isLoading) return;
-
-  isLoading = true;
-  document.getElementById('rbtn').classList.add('spin');
-
-  try {
-    const email = `${S.user}@${S.domain}`;
-    const r = await fetch(`${API_URL}/api/messages?email=${encodeURIComponent(email)}`);
-    const msgs = await r.json();
-    const prevCount = S.msgs.length;
-
-    S.msgs = msgs;
-
-    if (msgs.length > prevCount && prevCount > 0) {
-      toast('📨', `${msgs.length - prevCount} email baru!`);
+  // ── CLIPBOARD ───────────────────────────────────────────────────────────────
+  async function copyEmail() {
+    try {
+      await navigator.clipboard.writeText(currentEmail);
+      const btn = document.getElementById('copyBtn');
+      btn.classList.add('copied');
+      btn.innerHTML = `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg> Copied!`;
+      setTimeout(() => {
+        btn.classList.remove('copied');
+        btn.innerHTML = `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg> Copy`;
+      }, 2000);
+    } catch {
+      showToast('Copy failed — select manually', true);
     }
-
-    render(msgs);
-  } catch(e) {
-    // FIX 1: toast dipanggil dengan dua argumen yang benar
-    toast('❌', `Gagal memuat pesan: ${e?.message || String(e)}`);
   }
 
-  document.getElementById('rbtn').classList.remove('spin');
-  isLoading = false;
+  // ── FETCH INBOX ─────────────────────────────────────────────────────────────
+  async function fetchInbox() {
+    const isFirst = emails.length === 0;
+    if (isFirst) renderSkeleton();
 
-  if (resetTimer) startTimer();
-}
-
-function render(msgs) {
-  const badge = document.getElementById('badge');
-  badge.textContent = msgs.length;
-  badge.classList.toggle('badge-empty', !msgs.length);
-
-  if (!msgs.length) {
-    document.getElementById('list').innerHTML = `
-      <div class="empty">
-        <span class="empty-ic">📭</span>
-        <div class="empty-t">Inbox kosong</div>
-        <div class="empty-s">Kirim email ke<br><b style="color:var(--ac);font-family:var(--mono)">${S.user}@${S.domain}</b><br>untuk mencobanya</div>
-      </div>`;
-    return;
+    try {
+      const url = `${API_BASE}/api/inbox?address=${encodeURIComponent(currentEmail)}`;
+      const res = await fetch(url);
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      emails = await res.json();
+      renderInbox();
+    } catch (err) {
+      if (isFirst) renderInbox();   // show empty rather than skeleton
+      showToast('Could not fetch inbox — retrying…', true);
+    }
   }
 
-  document.getElementById('list').innerHTML = `<div class="emails">${msgs.map(m=>`
-    <div class="eitem ${m.seen?'':'unread'}" onclick="openMsg('${m.id}')">
-      <div class="eitem-body">
-        <div class="erow">
-          <div class="efrom">${esc(m.fromName||m.from)}</div>
-          <div class="etime">${fmtTime(m.date)}</div>
-        </div>
-        <div class="esubj">${esc(m.subject||'(Tanpa Judul)')}</div>
-      </div>
-      <button class="edel" onclick="event.stopPropagation();delMsg('${m.id}')" title="Hapus">
-        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/></svg>
-      </button>
-    </div>`).join('')}</div>`;
-}
+  function manualRefresh() {
+    fetchInbox();
+    resetCountdown();
+  }
 
-async function openMsg(id) {
-  S.openId = id;
-  try {
-    const email = `${S.user}@${S.domain}`;
-    const r = await fetch(`${API_URL}/api/messages/${id}?email=${encodeURIComponent(email)}`);
-    const m = await r.json();
-    document.getElementById('msubj').textContent = m.subject || '(Tanpa Judul)';
-    document.getElementById('mfrom').textContent = `Dari: ${m.fromName ? m.fromName + ' <' + m.from + '>' : m.from}`;
-    document.getElementById('mtime').textContent = m.date || '';
-    const body = document.getElementById('mbody');
-    if (m.htmlBody && m.htmlBody.trim()) {
-      body.innerHTML = `<div class="mhtml-wrap"><iframe id="mif" sandbox="allow-same-origin allow-popups"></iframe></div>`;
-      const f = document.getElementById('mif');
-      const d = f.contentDocument || f.contentWindow.document;
-      d.open(); d.write(m.htmlBody); d.close();
-      setTimeout(()=>{try{f.style.height=(d.body.scrollHeight+30)+'px'}catch(e){}},350);
+  // ── COUNTDOWN ───────────────────────────────────────────────────────────────
+  function startCountdown() {
+    stopCountdown();
+    countdown = POLL_MS / 1000;
+    updateCountdownUI();
+
+    countdownTimer = setInterval(() => {
+      if (!tabActive) return;
+      countdown--;
+      if (countdown <= 0) {
+        countdown = POLL_MS / 1000;
+        fetchInbox();
+      }
+      updateCountdownUI();
+    }, 1000);
+  }
+
+  function stopCountdown() {
+    if (countdownTimer) { clearInterval(countdownTimer); countdownTimer = null; }
+  }
+
+  function resetCountdown() {
+    countdown = POLL_MS / 1000;
+    updateCountdownUI();
+  }
+
+  function updateCountdownUI() {
+    const el = document.getElementById('countdown');
+    if (!tabActive) {
+      el.textContent = 'Auto-refresh paused (tab hidden)';
     } else {
-      body.innerHTML = `<div class="mtext">${esc(m.textBody||m.body||'(Kosong)')}</div>`;
+      el.textContent = `Auto-refresh in ${countdown}s`;
     }
-    document.getElementById('ov').classList.add('on');
-    // Update seen in local list
-    S.msgs = S.msgs.map(msg => msg.id === id ? {...msg, seen:true} : msg);
-    render(S.msgs);
-  } catch(e) { toast('❌','Gagal membuka email'); }
-}
+  }
 
-async function delMsg(id) {
-  const email = `${S.user}@${S.domain}`;
-  try {
-    await fetch(`${API_URL}/api/messages/${id}?email=${encodeURIComponent(email)}`, {method:'DELETE'});
-    S.msgs = S.msgs.filter(m => m.id !== id);
-    render(S.msgs);
-    toast('🗑️','Email dihapus');
-  } catch(e) { toast('❌','Gagal menghapus'); }
-}
+  // ── RENDER ──────────────────────────────────────────────────────────────────
+  function renderSkeleton() {
+    const list = document.getElementById('inboxList');
+    list.innerHTML = [1,2,3].map(() => `
+      <div class="skeleton-item">
+        <div class="skel skel-sm"></div>
+        <div class="skel skel-lg"></div>
+      </div>
+    `).join('');
+  }
 
-async function delOpenMsg() {
-  if (!S.openId) return;
-  await delMsg(S.openId);
-  closeM();
-}
+  function renderInbox() {
+    document.getElementById('inboxCount').textContent = emails.length;
+    const list = document.getElementById('inboxList');
 
-async function clearAll() {
-  if (!S.user || !S.msgs.length) return;
-  if (!confirm(`Hapus semua ${S.msgs.length} email?`)) return;
-  const email = `${S.user}@${S.domain}`;
-  try {
-    await fetch(`${API_URL}/api/inbox?email=${encodeURIComponent(email)}`, {method:'DELETE'});
-    S.msgs = []; render([]);
-    toast('🗑️','Semua email dihapus');
-  } catch(e) { toast('❌','Gagal menghapus semua'); }
-}
-
-function closeM() { document.getElementById('ov').classList.remove('on'); S.openId = null; }
-
-// ── TIMER ──────────────────────────────────────────────────────────────────
-function startTimer() {
-  clearInterval(S.timer);
-
-  let sec = S.cd || 30;
-  const el = document.getElementById('lastUpdate');
-
-  if (el) el.textContent = `${sec}s`;
-
-  S.timer = setInterval(async () => {
-    sec--;
-
-    if (el) el.textContent = `${sec}s`;
-
-    if (sec <= 0) {
-      clearInterval(S.timer);
-      await loadMsgs(true);
+    if (!emails.length) {
+      list.innerHTML = `
+        <div class="empty-state">
+          <div class="empty-icon">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+              <path d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/>
+            </svg>
+          </div>
+          <div class="empty-title">No emails yet</div>
+          <div class="empty-sub">Copy your address above and share it.<br>Messages appear here automatically.</div>
+        </div>
+      `;
+      return;
     }
-  }, 1000);
-}
-  
-// ── UTILS ──────────────────────────────────────────────────────────────────
-function setStatus(s) {
-  const d=document.getElementById('dot'), t=document.getElementById('stxt');
-  const c={ok:'var(--gn)',err:'var(--rd)',load:'var(--yw)'}[s];
-  const l={ok:'Online',err:'Error',load:'Menghubungkan...'}[s];
-  d.style.background=c; d.style.boxShadow=`0 0 8px ${c}`; t.textContent=l;
-}
-function fmtTime(s) {
-  if (!s) return '—';
-  try {
-    const d=new Date(s), now=new Date(), diff=(now-d)/1000;
-    if(diff<60) return 'Baru saja';
-    if(diff<3600) return Math.floor(diff/60)+'m lalu';
-    if(diff<86400) return Math.floor(diff/3600)+'j lalu';
-    return d.toLocaleDateString('id-ID',{day:'numeric',month:'short'});
-  } catch {return s;}
-}
-function esc(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;')}
-let tt;
-function toast(ic,msg){
-  document.getElementById('tic').textContent=ic;
-  document.getElementById('tmsg').textContent=msg;
-  const t=document.getElementById('toast');
-  t.classList.add('on'); clearTimeout(tt);
-  tt=setTimeout(()=>t.classList.remove('on'),3500);
-}
-document.addEventListener('keydown',e=>{
-  if(e.key==='Escape')closeM();
-  if(e.key==='r'&&!e.ctrlKey&&!e.metaKey&&document.activeElement.tagName!=='INPUT')loadMsgs();
-});
 
-init();
+    list.innerHTML = emails.map(e => `
+      <div class="inbox-item" onclick="openEmail('${e.id}')">
+        <span class="item-from">${escHtml(e.from)}</span>
+        <span class="item-time">${relTime(e.receivedAt)}</span>
+        <span class="item-subject">${escHtml(e.subject || '(no subject)')}</span>
+      </div>
+    `).join('');
+  }
+
+  // ── MODAL ───────────────────────────────────────────────────────────────────
+  async function openEmail(id) {
+    const backdrop = document.getElementById('modalBackdrop');
+    backdrop.classList.add('open');
+
+    // Find in local cache first, then fetch full body
+    const cached = emails.find(e => e.id === id);
+    if (cached) {
+      document.getElementById('modalSubject').textContent = cached.subject || '(no subject)';
+      document.getElementById('modalFrom').textContent    = cached.from;
+      document.getElementById('modalTo').textContent      = cached.to;
+      document.getElementById('modalDate').textContent    = fmtDate(cached.receivedAt);
+    }
+
+    try {
+      const url = `${API_BASE}/api/email/${id}?address=${encodeURIComponent(currentEmail)}`;
+      const res = await fetch(url);
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const email = await res.json();
+
+      document.getElementById('modalSubject').textContent = email.subject || '(no subject)';
+      document.getElementById('modalFrom').textContent    = email.from;
+      document.getElementById('modalTo').textContent      = email.to;
+      document.getElementById('modalDate').textContent    = fmtDate(email.receivedAt);
+
+      const iframe = document.getElementById('modalIframe');
+      const body   = email.bodyHtml || `<pre style="font-family:monospace;padding:20px;color:#333;">${escHtml(email.bodyText || '')}</pre>`;
+      iframe.srcdoc = body;
+    } catch {
+      showToast('Could not load email body', true);
+    }
+  }
+
+  function closeModal() {
+    document.getElementById('modalBackdrop').classList.remove('open');
+    setTimeout(() => { document.getElementById('modalIframe').srcdoc = ''; }, 300);
+  }
+
+  function handleBackdropClick(e) {
+    if (e.target === document.getElementById('modalBackdrop')) closeModal();
+  }
+
+  // ── TOAST ───────────────────────────────────────────────────────────────────
+  let toastTimer;
+  function showToast(msg, isError = false) {
+    const toast = document.getElementById('toast');
+    toast.textContent = msg;
+    toast.className   = 'show' + (isError ? ' error' : '');
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(() => { toast.className = ''; }, 3500);
+  }
+
+  // ── HELPERS ─────────────────────────────────────────────────────────────────
+  function escHtml(str) {
+    return String(str)
+      .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
+      .replace(/"/g,'&quot;').replace(/'/g,'&#39;');
+  }
+
+  function relTime(iso) {
+    const diff = Math.floor((Date.now() - new Date(iso)) / 1000);
+    if (diff < 60)   return `${diff}s ago`;
+    if (diff < 3600) return `${Math.floor(diff/60)}m ago`;
+    if (diff < 86400) return `${Math.floor(diff/3600)}h ago`;
+    return `${Math.floor(diff/86400)}d ago`;
+  }
+
+  function fmtDate(iso) {
+    return new Date(iso).toLocaleString(undefined, {
+      month:'short', day:'numeric', year:'numeric',
+      hour:'2-digit', minute:'2-digit'
+    });
+  }
+
+  // ── START ───────────────────────────────────────────────────────────────────
+  init();
 </script>
 </body>
 </html>
