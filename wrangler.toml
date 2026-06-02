@@ -5,8 +5,8 @@ compatibility_date = "2024-01-01"
 # ── KV Namespace ──────────────────────────────────────────────────────────────
 # Replace id with the value from: wrangler kv:namespace create FREETEMP_EMAILS
 [[kv_namespaces]]
-binding = "MAIL_KV"
-id      = "366e8c8e0a7941f8983d8fef35983109"
+binding = "FREETEMP_EMAILS"
+id      = "cf4eb106281b451b96796174e03ff3de"
 
 # Preview namespace (optional — used by wrangler dev)
 # preview_id = "YOUR_KV_PREVIEW_NAMESPACE_ID"
