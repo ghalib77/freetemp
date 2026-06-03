@@ -22,6 +22,7 @@
       --accent:    #e0e0e0;
       --green:     #4ade80;
       --red:       #f87171;
+      --yellow:    #fbbf24;
       --mono:      'JetBrains Mono', monospace;
       --sans:      'DM Sans', sans-serif;
     }
@@ -121,6 +122,7 @@
       margin-bottom: 12px;
     }
 
+    /* ── EMAIL ROW (display mode) ── */
     .email-row {
       display: flex;
       align-items: center;
@@ -142,6 +144,105 @@
 
     .email-address .domain { color: var(--fg3); }
 
+    /* ── CUSTOM EMAIL EDIT ROW ── */
+    .email-edit-row {
+      display: none;
+      align-items: center;
+      gap: 0;
+      background: var(--surface2);
+      border: 1px solid var(--border2);
+      border-radius: 8px;
+      overflow: hidden;
+      transition: border-color 0.15s;
+    }
+
+    .email-edit-row:focus-within {
+      border-color: var(--fg3);
+    }
+
+    .email-edit-row.editing {
+      display: flex;
+    }
+
+    .email-edit-row.error {
+      border-color: var(--red);
+    }
+
+    #customUsernameInput {
+      font-family: var(--mono);
+      font-size: 14px;
+      font-weight: 500;
+      color: var(--fg);
+      background: transparent;
+      border: none;
+      outline: none;
+      padding: 9px 4px 9px 12px;
+      flex: 1;
+      min-width: 0;
+      letter-spacing: -0.01em;
+    }
+
+    #customUsernameInput::placeholder {
+      color: var(--fg3);
+    }
+
+    .edit-domain-suffix {
+      font-family: var(--mono);
+      font-size: 14px;
+      color: var(--fg3);
+      padding: 9px 12px 9px 2px;
+      white-space: nowrap;
+      flex-shrink: 0;
+    }
+
+    .edit-actions {
+      display: flex;
+      gap: 4px;
+      padding: 4px;
+      border-left: 1px solid var(--border);
+      flex-shrink: 0;
+    }
+
+    .edit-confirm, .edit-cancel {
+      width: 28px;
+      height: 28px;
+      border-radius: 6px;
+      border: none;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.15s;
+      flex-shrink: 0;
+    }
+
+    .edit-confirm {
+      background: rgba(74, 222, 128, 0.1);
+      color: var(--green);
+    }
+
+    .edit-confirm:hover { background: rgba(74, 222, 128, 0.2); }
+
+    .edit-cancel {
+      background: rgba(255,255,255,0.04);
+      color: var(--fg3);
+    }
+
+    .edit-cancel:hover { background: rgba(255,255,255,0.08); color: var(--fg); }
+
+    /* validation hint */
+    .edit-hint {
+      font-size: 11px;
+      color: var(--fg3);
+      margin-top: 8px;
+      display: none;
+      font-family: var(--mono);
+    }
+
+    .edit-hint.visible { display: block; }
+    .edit-hint.err     { color: var(--red); }
+
+    /* ── BUTTONS ── */
     .btn {
       font-family: var(--sans);
       font-size: 13px;
@@ -184,6 +285,7 @@
       margin-top: 16px;
       padding-top: 16px;
       border-top: 1px solid var(--border);
+      flex-wrap: wrap;
     }
 
     /* ── INBOX SECTION ── */
@@ -247,9 +349,7 @@
     }
 
     .inbox-item:last-child { border-bottom: none; }
-
     .inbox-item:hover { background: rgba(255,255,255,0.04); }
-
     .inbox-item:active { background: rgba(255,255,255,0.06); }
 
     .item-from {
@@ -357,6 +457,7 @@
 
     #toast.show { transform: translateX(-50%) translateY(0); }
     #toast.error { border-color: var(--red); color: var(--red); }
+    #toast.success { border-color: var(--green); color: var(--green); }
 
     /* ── MODAL ── */
     .modal-backdrop {
@@ -483,14 +584,11 @@
     @media (max-width: 480px) {
       header { padding: 32px 0 24px; }
       .email-address { font-size: 13px; }
+      #customUsernameInput { font-size: 12px; }
+      .edit-domain-suffix { font-size: 12px; }
       .modal { max-height: 92vh; }
-      .inbox-header {
-        align-items: start;
-      }
-      .inbox-actions { 
-        flex-direction: column-reverse; 
-        align-items: end;
-      }
+      .inbox-header { align-items: start; }
+      .inbox-actions { flex-direction: column-reverse; align-items: end; }
     }
   </style>
 </head>
@@ -513,7 +611,9 @@
   <!-- EMAIL CARD -->
   <div class="email-card">
     <div class="email-label">Your temporary address</div>
-    <div class="email-row">
+
+    <!-- Display mode -->
+    <div class="email-row" id="emailDisplayRow">
       <div class="email-address" id="emailDisplay">
         <span id="emailUser">—</span><span class="domain" id="emailDomain"></span>
       </div>
@@ -524,7 +624,43 @@
         Copy
       </button>
     </div>
+
+    <!-- Edit mode -->
+    <div class="email-edit-row" id="emailEditRow">
+      <input
+        type="text"
+        id="customUsernameInput"
+        placeholder="yourusername"
+        maxlength="40"
+        autocomplete="off"
+        autocapitalize="none"
+        spellcheck="false"
+      />
+      <span class="edit-domain-suffix" id="editDomainSuffix">@domain.tld</span>
+      <div class="edit-actions">
+        <button class="edit-confirm" onclick="confirmCustomEmail()" title="Apply">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+            <polyline points="20 6 9 17 4 12"/>
+          </svg>
+        </button>
+        <button class="edit-cancel" onclick="cancelEditEmail()" title="Cancel">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+          </svg>
+        </button>
+      </div>
+    </div>
+    <div class="edit-hint" id="editHint">a–z, 0–9, dots and hyphens only · 3–40 chars</div>
+
     <div class="card-actions">
+      <!-- Custom email button -->
+      <button class="btn" id="customBtn" onclick="startEditEmail()">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/>
+          <path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/>
+        </svg>
+        Custom
+      </button>
       <button class="btn btn-danger" onclick="regenerateEmail()">
         <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
           <path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/>
@@ -585,38 +721,53 @@
 <script>
   // ── CONFIG ──────────────────────────────────────────────────────────────────
   const DOMAIN      = 'mediasaya.web.id';
-  const API_BASE    = `https://freetemp.muhamadghalib7.workers.dev`;   // adjust after deploy
+  const API_BASE    = `https://freetemp.muhamadghalib7.workers.dev`;
   const POLL_MS     = 5000;
   const ADJECTIVES  = ['quick','dark','swift','bright','cold','sharp','calm','bold','slow','wild','tiny','vast','soft','deep','loud'];
   const NOUNS       = ['fox','owl','ray','arc','sky','dot','fin','hex','jet','kex','pix','row','sox','tag','vex'];
+
+  // Allowed chars: lowercase letters, digits, dots, hyphens. 3–40 chars.
+  const USERNAME_RE = /^[a-z0-9][a-z0-9.\-]{1,38}[a-z0-9]$|^[a-z0-9]{1,40}$/;
 
   // ── STATE ───────────────────────────────────────────────────────────────────
   let currentEmail  = '';
   let emails        = [];
   let countdown     = POLL_MS / 1000;
   let countdownTimer = null;
-  let pollTimer      = null;
   let tabActive      = !document.hidden;
 
   // ── INIT ────────────────────────────────────────────────────────────────────
   function init() {
     currentEmail = localStorage.getItem('freetemp_email') || generateEmail();
+    document.getElementById('editDomainSuffix').textContent = '@' + DOMAIN;
     renderEmailAddress();
     fetchInbox();
     startCountdown();
 
     document.addEventListener('visibilitychange', () => {
       tabActive = !document.hidden;
-      if (tabActive) {
-        fetchInbox();
-        startCountdown();
-      } else {
-        stopCountdown();
-      }
+      if (tabActive) { fetchInbox(); startCountdown(); }
+      else { stopCountdown(); }
     });
 
     document.addEventListener('keydown', e => {
-      if (e.key === 'Escape') closeModal();
+      if (e.key === 'Escape') {
+        if (document.getElementById('emailEditRow').classList.contains('editing')) {
+          cancelEditEmail();
+        } else {
+          closeModal();
+        }
+      }
+    });
+
+    // Confirm on Enter inside input
+    document.getElementById('customUsernameInput').addEventListener('keydown', e => {
+      if (e.key === 'Enter') confirmCustomEmail();
+    });
+
+    // Live validation hint while typing
+    document.getElementById('customUsernameInput').addEventListener('input', () => {
+      clearEditError();
     });
   }
 
@@ -638,12 +789,97 @@
 
   function regenerateEmail() {
     if (!confirm('Generate a new address? Your current inbox will be cleared.')) return;
+    cancelEditEmail();
     currentEmail = generateEmail();
     emails = [];
     renderEmailAddress();
     renderInbox();
     fetchInbox();
     resetCountdown();
+  }
+
+  // ── CUSTOM EMAIL ─────────────────────────────────────────────────────────────
+
+  function startEditEmail() {
+    const [currentUser] = currentEmail.split('@');
+    const input = document.getElementById('customUsernameInput');
+    input.value = currentUser;
+
+    // Switch to edit mode
+    document.getElementById('emailDisplayRow').style.display = 'none';
+    document.getElementById('emailEditRow').classList.add('editing');
+    document.getElementById('editHint').classList.add('visible');
+    document.getElementById('customBtn').style.display = 'none';
+
+    input.focus();
+    input.select();
+  }
+
+  function cancelEditEmail() {
+    document.getElementById('emailDisplayRow').style.display = '';
+    document.getElementById('emailEditRow').classList.remove('editing');
+    document.getElementById('emailEditRow').classList.remove('error');
+    document.getElementById('editHint').classList.remove('visible');
+    document.getElementById('editHint').classList.remove('err');
+    document.getElementById('editHint').textContent = 'a–z, 0–9, dots and hyphens only · 3–40 chars';
+    document.getElementById('customBtn').style.display = '';
+  }
+
+  function clearEditError() {
+    document.getElementById('emailEditRow').classList.remove('error');
+    document.getElementById('editHint').classList.remove('err');
+    document.getElementById('editHint').textContent = 'a–z, 0–9, dots and hyphens only · 3–40 chars';
+  }
+
+  function confirmCustomEmail() {
+    const input = document.getElementById('customUsernameInput');
+    const rawVal = input.value.trim().toLowerCase();
+
+    // Validate
+    if (rawVal.length < 1) {
+      showEditError('Username cannot be empty');
+      return;
+    }
+    if (rawVal.length < 3) {
+      showEditError('At least 3 characters required');
+      return;
+    }
+    if (!USERNAME_RE.test(rawVal)) {
+      showEditError('Only a–z, 0–9, dots and hyphens · no leading/trailing dots or hyphens');
+      return;
+    }
+
+    const newEmail = `${rawVal}@${DOMAIN}`;
+
+    if (newEmail === currentEmail) {
+      cancelEditEmail();
+      return;
+    }
+
+    // Confirm if there are existing emails
+    if (emails.length > 0) {
+      if (!confirm(`Switch to ${newEmail}? Your current inbox will be cleared.`)) return;
+    }
+
+    currentEmail = newEmail;
+    localStorage.setItem('freetemp_email', currentEmail);
+    emails = [];
+    renderEmailAddress();
+    cancelEditEmail();
+    renderInbox();
+    fetchInbox();
+    resetCountdown();
+    showToast(`Address set to ${currentEmail}`, false, true);
+  }
+
+  function showEditError(msg) {
+    const hint = document.getElementById('editHint');
+    const editRow = document.getElementById('emailEditRow');
+    editRow.classList.add('error');
+    hint.classList.add('visible');
+    hint.classList.add('err');
+    hint.textContent = msg;
+    document.getElementById('customUsernameInput').focus();
   }
 
   // ── CLIPBOARD ───────────────────────────────────────────────────────────────
@@ -674,7 +910,7 @@
       emails = await res.json();
       renderInbox();
     } catch (err) {
-      if (isFirst) renderInbox();   // show empty rather than skeleton
+      if (isFirst) renderInbox();
       showToast('Could not fetch inbox — retrying…', true);
     }
   }
@@ -763,7 +999,6 @@
     const backdrop = document.getElementById('modalBackdrop');
     backdrop.classList.add('open');
 
-    // Find in local cache first, then fetch full body
     const cached = emails.find(e => e.id === id);
     if (cached) {
       document.getElementById('modalSubject').textContent = cached.subject || '(no subject)';
@@ -802,10 +1037,13 @@
 
   // ── TOAST ───────────────────────────────────────────────────────────────────
   let toastTimer;
-  function showToast(msg, isError = false) {
+  function showToast(msg, isError = false, isSuccess = false) {
     const toast = document.getElementById('toast');
     toast.textContent = msg;
-    toast.className   = 'show' + (isError ? ' error' : '');
+    let cls = 'show';
+    if (isError)   cls += ' error';
+    if (isSuccess) cls += ' success';
+    toast.className = cls;
     clearTimeout(toastTimer);
     toastTimer = setTimeout(() => { toast.className = ''; }, 3500);
   }
@@ -819,8 +1057,8 @@
 
   function relTime(iso) {
     const diff = Math.floor((Date.now() - new Date(iso)) / 1000);
-    if (diff < 60)   return `${diff}s ago`;
-    if (diff < 3600) return `${Math.floor(diff/60)}m ago`;
+    if (diff < 60)    return `${diff}s ago`;
+    if (diff < 3600)  return `${Math.floor(diff/60)}m ago`;
     if (diff < 86400) return `${Math.floor(diff/3600)}h ago`;
     return `${Math.floor(diff/86400)}d ago`;
   }
@@ -837,3 +1075,4 @@
 </script>
 </body>
 </html>
+
